@@ -1,0 +1,389 @@
+{
+  "always_haram": {
+    "120": {
+      "name": "Carmine/Cochineal",
+      "reason": "Insect-derived colorant (from cochineal beetles)",
+      "reason_code": "e120_carmine_cochineal_haram"
+    },
+    "542": {
+      "name": "Bone Phosphate",
+      "reason": "Derived from animal bones",
+      "reason_code": "e542_bone_phosphate_haram"
+    },
+    "904": {
+      "name": "Shellac",
+      "reason": "Insect-derived glaze (from lac beetles)",
+      "reason_code": "e904_shellac_insect_haram"
+    },
+    "913": {
+      "name": "Lanolin",
+      "reason": "Derived from sheep wool grease (debated, treated as haram in strict mode)",
+      "reason_code": "e913_lanolin_animal_haram"
+    }
+  },
+  "source_dependent": {
+    "422": {
+      "name": "Glycerol/Glycerin",
+      "reason": "Can be animal, plant, or synthetic derived",
+      "reason_code": "e422_glycerol_source_unknown"
+    },
+    "430": {
+      "name": "Polyoxyethylene (8) stearate",
+      "reason": "Stearate may be animal-derived",
+      "reason_code": "e430_stearate_source_unknown"
+    },
+    "431": {
+      "name": "Polyoxyethylene (40) stearate",
+      "reason": "Stearate may be animal-derived",
+      "reason_code": "e431_stearate_source_unknown"
+    },
+    "432": {
+      "name": "Polysorbate 20",
+      "reason": "Fatty acid esters may be animal-derived",
+      "reason_code": "e432_polysorbate_source_unknown"
+    },
+    "433": {
+      "name": "Polysorbate 80",
+      "reason": "Fatty acid esters may be animal-derived",
+      "reason_code": "e433_polysorbate_source_unknown"
+    },
+    "434": {
+      "name": "Polysorbate 40",
+      "reason": "Fatty acid esters may be animal-derived",
+      "reason_code": "e434_polysorbate_source_unknown"
+    },
+    "435": {
+      "name": "Polysorbate 60",
+      "reason": "Fatty acid esters may be animal-derived",
+      "reason_code": "e435_polysorbate_source_unknown"
+    },
+    "436": {
+      "name": "Polysorbate 65",
+      "reason": "Fatty acid esters may be animal-derived",
+      "reason_code": "e436_polysorbate_source_unknown"
+    },
+    "441": {
+      "name": "Gelatin",
+      "reason": "Animal-derived, source (porcine/bovine/fish) unknown",
+      "reason_code": "e441_gelatin_source_unknown"
+    },
+    "470": {
+      "name": "Fatty Acid Salts",
+      "reason": "Fatty acids may be animal-derived",
+      "reason_code": "e470_fatty_acid_salts_source_unknown"
+    },
+    "471": {
+      "name": "Mono- and Diglycerides",
+      "reason": "Glycerides may be animal-derived",
+      "reason_code": "e471_mono_diglycerides_source_unknown"
+    },
+    "472": {
+      "name": "Fatty Acid Esters",
+      "reason": "Fatty acid esters may be animal-derived",
+      "reason_code": "e472_fatty_acid_esters_source_unknown"
+    },
+    "473": {
+      "name": "Sucrose Esters of Fatty Acids",
+      "reason": "Fatty acids may be animal-derived",
+      "reason_code": "e473_sucrose_esters_source_unknown"
+    },
+    "474": {
+      "name": "Sucroglycerides",
+      "reason": "Glycerides may be animal-derived",
+      "reason_code": "e474_sucroglycerides_source_unknown"
+    },
+    "475": {
+      "name": "Polyglycerol Esters of Fatty Acids",
+      "reason": "Fatty acids may be animal-derived",
+      "reason_code": "e475_polyglycerol_esters_source_unknown"
+    },
+    "476": {
+      "name": "Polyglycerol Polyricinoleate",
+      "reason": "May contain animal-derived components",
+      "reason_code": "e476_pgpr_source_unknown"
+    },
+    "477": {
+      "name": "Propane-1,2-diol Esters of Fatty Acids",
+      "reason": "Fatty acids may be animal-derived",
+      "reason_code": "e477_propanediol_esters_source_unknown"
+    },
+    "481": {
+      "name": "Sodium Stearoyl Lactylate",
+      "reason": "Stearate may be animal-derived",
+      "reason_code": "e481_sodium_stearoyl_lactylate_source_unknown"
+    },
+    "482": {
+      "name": "Calcium Stearoyl Lactylate",
+      "reason": "Stearate may be animal-derived",
+      "reason_code": "e482_calcium_stearoyl_lactylate_source_unknown"
+    },
+    "483": {
+      "name": "Stearyl Tartrate",
+      "reason": "Stearate may be animal-derived",
+      "reason_code": "e483_stearyl_tartrate_source_unknown"
+    },
+    "491": {
+      "name": "Sorbitan Monostearate",
+      "reason": "Stearate may be animal-derived",
+      "reason_code": "e491_sorbitan_monostearate_source_unknown"
+    },
+    "492": {
+      "name": "Sorbitan Tristearate",
+      "reason": "Stearate may be animal-derived",
+      "reason_code": "e492_sorbitan_tristearate_source_unknown"
+    },
+    "493": {
+      "name": "Sorbitan Monolaurate",
+      "reason": "Fatty acids may be animal-derived",
+      "reason_code": "e493_sorbitan_monolaurate_source_unknown"
+    },
+    "494": {
+      "name": "Sorbitan Monooleate",
+      "reason": "Fatty acids may be animal-derived",
+      "reason_code": "e494_sorbitan_monooleate_source_unknown"
+    },
+    "495": {
+      "name": "Sorbitan Monopalmitate",
+      "reason": "Fatty acids may be animal-derived",
+      "reason_code": "e495_sorbitan_monopalmitate_source_unknown"
+    },
+    "570": {
+      "name": "Stearic Acid",
+      "reason": "Can be animal or plant-derived",
+      "reason_code": "e570_stearic_acid_source_unknown"
+    },
+    "572": {
+      "name": "Magnesium Stearate",
+      "reason": "Stearate may be animal-derived",
+      "reason_code": "e572_magnesium_stearate_source_unknown"
+    },
+    "631": {
+      "name": "Disodium Inosinate",
+      "reason": "Often derived from meat or fish",
+      "reason_code": "e631_disodium_inosinate_source_unknown"
+    },
+    "635": {
+      "name": "Disodium 5'-ribonucleotides",
+      "reason": "Often derived from meat or fish",
+      "reason_code": "e635_disodium_ribonucleotides_source_unknown"
+    },
+    "640": {
+      "name": "Glycine",
+      "reason": "Amino acid, may be animal-derived",
+      "reason_code": "e640_glycine_source_unknown"
+    },
+    "920": {
+      "name": "L-Cysteine",
+      "reason": "Often derived from human hair, animal feathers, or hooves",
+      "reason_code": "e920_lcysteine_source_unknown"
+    },
+    "921": {
+      "name": "L-Cystine",
+      "reason": "Often derived from human hair, animal feathers, or hooves",
+      "reason_code": "e921_lcystine_source_unknown"
+    }
+  },
+  "halal": {
+    "100": {
+      "name": "Curcumin",
+      "reason": "Plant-derived (turmeric)",
+      "note": "Generally halal"
+    },
+    "101": {
+      "name": "Riboflavin (Vitamin B2)",
+      "reason": "Synthetic or plant-derived",
+      "note": "Generally halal"
+    },
+    "160": {
+      "name": "Carotenoids",
+      "reason": "Plant-derived colorants",
+      "note": "Generally halal (beta-carotene, etc.)"
+    },
+    "162": {
+      "name": "Beetroot Red",
+      "reason": "Plant-derived (beetroot)",
+      "note": "Generally halal"
+    },
+    "163": {
+      "name": "Anthocyanins",
+      "reason": "Plant-derived (grape skins, berries)",
+      "note": "Generally halal"
+    },
+    "170": {
+      "name": "Calcium Carbonate",
+      "reason": "Mineral-derived",
+      "note": "Halal"
+    },
+    "200": {
+      "name": "Sorbic Acid",
+      "reason": "Synthetic preservative",
+      "note": "Halal"
+    },
+    "202": {
+      "name": "Potassium Sorbate",
+      "reason": "Synthetic preservative",
+      "note": "Halal"
+    },
+    "270": {
+      "name": "Lactic Acid",
+      "reason": "Fermentation product (usually plant-based)",
+      "note": "Generally halal"
+    },
+    "290": {
+      "name": "Carbon Dioxide",
+      "reason": "Gas",
+      "note": "Halal"
+    },
+    "296": {
+      "name": "Malic Acid",
+      "reason": "Plant-derived or synthetic",
+      "note": "Halal"
+    },
+    "300": {
+      "name": "Ascorbic Acid (Vitamin C)",
+      "reason": "Synthetic or plant-derived",
+      "note": "Halal"
+    },
+    "306": {
+      "name": "Tocopherols (Vitamin E)",
+      "reason": "Plant-derived (vegetable oils)",
+      "note": "Halal"
+    },
+    "322": {
+      "name": "Lecithin",
+      "reason": "Source varies (soy, sunflower, egg)",
+      "note": "Source detection handled separately by lecithin handler"
+    },
+    "330": {
+      "name": "Citric Acid",
+      "reason": "Fermentation product or synthetic",
+      "note": "Halal"
+    },
+    "331": {
+      "name": "Sodium Citrates",
+      "reason": "Derived from citric acid",
+      "note": "Halal"
+    },
+    "332": {
+      "name": "Potassium Citrates",
+      "reason": "Derived from citric acid",
+      "note": "Halal"
+    },
+    "333": {
+      "name": "Calcium Citrates",
+      "reason": "Derived from citric acid",
+      "note": "Halal"
+    },
+    "334": {
+      "name": "Tartaric Acid",
+      "reason": "Plant-derived (grape byproduct)",
+      "note": "Halal"
+    },
+    "335": {
+      "name": "Sodium Tartrates",
+      "reason": "Derived from tartaric acid",
+      "note": "Halal"
+    },
+    "336": {
+      "name": "Potassium Tartrates (Cream of Tartar)",
+      "reason": "Plant-derived (grape byproduct)",
+      "note": "Halal"
+    },
+    "338": {
+      "name": "Phosphoric Acid",
+      "reason": "Mineral-derived",
+      "note": "Halal"
+    },
+    "339": {
+      "name": "Sodium Phosphates",
+      "reason": "Mineral-derived",
+      "note": "Halal"
+    },
+    "340": {
+      "name": "Potassium Phosphates",
+      "reason": "Mineral-derived",
+      "note": "Halal"
+    },
+    "341": {
+      "name": "Calcium Phosphates",
+      "reason": "Mineral-derived",
+      "note": "Halal"
+    },
+    "400": {
+      "name": "Alginic Acid",
+      "reason": "Plant-derived (seaweed)",
+      "note": "Halal"
+    },
+    "401": {
+      "name": "Sodium Alginate",
+      "reason": "Plant-derived (seaweed)",
+      "note": "Halal"
+    },
+    "406": {
+      "name": "Agar",
+      "reason": "Plant-derived (seaweed)",
+      "note": "Halal - common gelatin alternative"
+    },
+    "407": {
+      "name": "Carrageenan",
+      "reason": "Plant-derived (seaweed)",
+      "note": "Halal"
+    },
+    "410": {
+      "name": "Locust Bean Gum",
+      "reason": "Plant-derived",
+      "note": "Halal"
+    },
+    "412": {
+      "name": "Guar Gum",
+      "reason": "Plant-derived",
+      "note": "Halal"
+    },
+    "414": {
+      "name": "Gum Arabic",
+      "reason": "Plant-derived",
+      "note": "Halal"
+    },
+    "415": {
+      "name": "Xanthan Gum",
+      "reason": "Fermentation product",
+      "note": "Halal"
+    },
+    "440": {
+      "name": "Pectin",
+      "reason": "Plant-derived (fruit)",
+      "note": "Halal"
+    },
+    "460": {
+      "name": "Cellulose",
+      "reason": "Plant-derived",
+      "note": "Halal"
+    },
+    "500": {
+      "name": "Sodium Carbonates",
+      "reason": "Mineral-derived",
+      "note": "Halal"
+    },
+    "501": {
+      "name": "Potassium Carbonates",
+      "reason": "Mineral-derived",
+      "note": "Halal"
+    },
+    "503": {
+      "name": "Ammonium Carbonates",
+      "reason": "Synthetic",
+      "note": "Halal"
+    },
+    "508": {
+      "name": "Potassium Chloride",
+      "reason": "Mineral-derived",
+      "note": "Halal"
+    },
+    "509": {
+      "name": "Calcium Chloride",
+      "reason": "Mineral-derived",
+      "note": "Halal"
+    }
+  }
+}
+

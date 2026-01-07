@@ -1,0 +1,267 @@
+{
+  "strong_certifiers": {
+    "southeast_asia": {
+      "JAKIM": {
+        "full_name": "Jabatan Kemajuan Islam Malaysia",
+        "country": "Malaysia",
+        "terms": ["jakim", "jakim halal", "jakim certified", "malaysia halal"],
+        "strength": "HIGH",
+        "notes": "Official Malaysian government halal authority"
+      },
+      "MUI": {
+        "full_name": "Majelis Ulama Indonesia",
+        "country": "Indonesia",
+        "terms": ["mui", "mui halal", "lppom mui", "halal mui"],
+        "strength": "HIGH",
+        "notes": "Indonesian Ulema Council - primary halal certifier"
+      },
+      "BPJPH": {
+        "full_name": "Badan Penyelenggara Jaminan Produk Halal",
+        "country": "Indonesia",
+        "terms": ["bpjph", "bpjph halal"],
+        "strength": "HIGH",
+        "notes": "Indonesia's new halal certification authority"
+      },
+      "MUIS": {
+        "full_name": "Majlis Ugama Islam Singapura",
+        "country": "Singapore",
+        "terms": ["muis", "muis halal", "muis certified", "singapore halal"],
+        "strength": "HIGH",
+        "notes": "Islamic Religious Council of Singapore"
+      },
+      "CICOT": {
+        "full_name": "Central Islamic Council of Thailand",
+        "country": "Thailand",
+        "terms": ["cicot", "cicot halal", "thailand halal"],
+        "strength": "HIGH",
+        "notes": "Thailand's primary halal certifier"
+      },
+      "HDC": {
+        "full_name": "Halal Development Corporation",
+        "country": "Malaysia",
+        "terms": ["hdc", "hdc halal"],
+        "strength": "HIGH",
+        "notes": "Malaysian halal industry development"
+      }
+    },
+    "middle_east": {
+      "ESMA": {
+        "full_name": "Emirates Authority for Standardization and Metrology",
+        "country": "UAE",
+        "terms": ["esma", "esma halal", "uae halal"],
+        "strength": "HIGH",
+        "notes": "UAE national halal authority"
+      },
+      "EIAC": {
+        "full_name": "Emirates International Accreditation Centre",
+        "country": "UAE",
+        "terms": ["eiac", "eiac halal"],
+        "strength": "HIGH",
+        "notes": "UAE accreditation body"
+      },
+      "SFDA": {
+        "full_name": "Saudi Food and Drug Authority",
+        "country": "Saudi Arabia",
+        "terms": ["sfda", "sfda halal", "saudi halal"],
+        "strength": "HIGH",
+        "notes": "Saudi Arabia's food safety authority"
+      },
+      "GSO": {
+        "full_name": "GCC Standardization Organization",
+        "country": "GCC",
+        "terms": ["gso", "gso halal", "gcc halal"],
+        "strength": "HIGH",
+        "notes": "Gulf Cooperation Council standards"
+      }
+    },
+    "americas": {
+      "IFANCA": {
+        "full_name": "Islamic Food and Nutrition Council of America",
+        "country": "USA",
+        "terms": ["ifanca", "ifanca halal", "ifanca certified"],
+        "strength": "HIGH",
+        "notes": "Major US halal certifier, crescent M logo"
+      },
+      "ISNA": {
+        "full_name": "Islamic Society of North America",
+        "country": "USA/Canada",
+        "terms": ["isna", "isna halal", "isna certified"],
+        "strength": "HIGH",
+        "notes": "North American halal certification"
+      },
+      "AHF": {
+        "full_name": "American Halal Foundation",
+        "country": "USA",
+        "terms": ["ahf", "ahf halal", "american halal foundation"],
+        "strength": "HIGH",
+        "notes": "US halal certifier"
+      },
+      "ISA": {
+        "full_name": "Islamic Services of America",
+        "country": "USA",
+        "terms": ["isa halal", "islamic services of america"],
+        "strength": "HIGH",
+        "notes": "US halal certification"
+      },
+      "ISWA": {
+        "full_name": "Islamic Society of the Washington Area",
+        "country": "USA",
+        "terms": ["iswa", "iswa halal"],
+        "strength": "MEDIUM",
+        "notes": "Regional US certifier"
+      }
+    },
+    "europe": {
+      "HFA": {
+        "full_name": "Halal Food Authority",
+        "country": "UK",
+        "terms": ["hfa", "hfa halal", "hfa certified", "halal food authority"],
+        "strength": "HIGH",
+        "notes": "Major UK halal certifier"
+      },
+      "HMC": {
+        "full_name": "Halal Monitoring Committee",
+        "country": "UK",
+        "terms": ["hmc", "hmc halal", "hmc certified"],
+        "strength": "HIGH",
+        "notes": "UK halal monitoring - stricter standards"
+      },
+      "HALAL_UK": {
+        "full_name": "Halal Authority Board UK",
+        "country": "UK",
+        "terms": ["halal authority board", "hab uk"],
+        "strength": "MEDIUM",
+        "notes": "UK halal authority"
+      },
+      "GIMDES": {
+        "full_name": "Gıda ve İhtiyaç Maddeleri Denetleme ve Sertifikalandırma Araştırmaları Derneği",
+        "country": "Turkey",
+        "terms": ["gimdes", "gimdes halal"],
+        "strength": "HIGH",
+        "notes": "Turkey's primary halal certifier"
+      },
+      "HALAL_DE": {
+        "full_name": "Halal Control",
+        "country": "Germany",
+        "terms": ["halal control", "halal control germany"],
+        "strength": "MEDIUM",
+        "notes": "German halal certification"
+      },
+      "AVS": {
+        "full_name": "A Votre Service",
+        "country": "France",
+        "terms": ["avs", "avs halal"],
+        "strength": "MEDIUM",
+        "notes": "French halal certification"
+      }
+    },
+    "global": {
+      "SMIIC": {
+        "full_name": "Standards and Metrology Institute for Islamic Countries",
+        "country": "OIC",
+        "terms": ["smiic", "smiic halal", "oic halal"],
+        "strength": "HIGH",
+        "notes": "OIC standard - international halal standard"
+      },
+      "WHC": {
+        "full_name": "World Halal Council",
+        "country": "International",
+        "terms": ["whc", "world halal council"],
+        "strength": "HIGH",
+        "notes": "International halal council"
+      },
+      "IHI_ALLIANCE": {
+        "full_name": "International Halal Integrity Alliance",
+        "country": "International",
+        "terms": ["ihi alliance", "ihi halal"],
+        "strength": "HIGH",
+        "notes": "International halal integrity organization"
+      }
+    },
+    "south_asia": {
+      "FSSAI_HALAL": {
+        "full_name": "Food Safety and Standards Authority of India - Halal",
+        "country": "India",
+        "terms": ["fssai halal", "india halal"],
+        "strength": "MEDIUM",
+        "notes": "Indian food safety with halal certification"
+      },
+      "SANHA": {
+        "full_name": "South African National Halaal Authority",
+        "country": "South Africa",
+        "terms": ["sanha", "sanha halal"],
+        "strength": "HIGH",
+        "notes": "South African halal authority"
+      },
+      "NIHT": {
+        "full_name": "National Independent Halaal Trust",
+        "country": "South Africa",
+        "terms": ["niht", "niht halal"],
+        "strength": "MEDIUM",
+        "notes": "South African halal trust"
+      }
+    },
+    "oceania": {
+      "AFIC": {
+        "full_name": "Australian Federation of Islamic Councils",
+        "country": "Australia",
+        "terms": ["afic", "afic halal", "australia halal"],
+        "strength": "HIGH",
+        "notes": "Australian halal certification"
+      },
+      "ICCV": {
+        "full_name": "Islamic Coordinating Council of Victoria",
+        "country": "Australia",
+        "terms": ["iccv", "iccv halal"],
+        "strength": "MEDIUM",
+        "notes": "Australian regional halal"
+      },
+      "FIANZ": {
+        "full_name": "Federation of Islamic Associations of New Zealand",
+        "country": "New Zealand",
+        "terms": ["fianz", "fianz halal", "nz halal"],
+        "strength": "HIGH",
+        "notes": "New Zealand halal authority"
+      }
+    }
+  },
+  "generic_strong_terms": [
+    "halal certified",
+    "halal-certified",
+    "certified halal",
+    "halal certification",
+    "halal cert",
+    "halal approved",
+    "halal logo",
+    "product is halal certified",
+    "this product is halal certified",
+    "certified by islamic",
+    "certified by muslim",
+    "officially halal",
+    "halal accredited"
+  ],
+  "weak_signals": {
+    "terms": [
+      "halal",
+      "suitable for muslims",
+      "muslim friendly",
+      "no pork",
+      "no alcohol",
+      "vegetarian halal",
+      "halal suitable"
+    ],
+    "note": "These terms alone are NOT sufficient for halal confirmation - could be marketing"
+  },
+  "certification_phrases": {
+    "strong": [
+      "certified by",
+      "approved by",
+      "certified under",
+      "halal certificate number",
+      "halal license",
+      "halal registered"
+    ],
+    "note": "When followed by a recognized certifier name, these indicate strong certification"
+  }
+}
+
