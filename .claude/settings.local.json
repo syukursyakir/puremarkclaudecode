@@ -24,7 +24,8 @@
       "Bash(npm i:*)",
       "Bash(sudo npm:*)",
       "Bash(npx @anthropic-ai/claude-code)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(tree:*)"
     ]
   }
 }

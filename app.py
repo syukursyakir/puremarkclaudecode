@@ -14,12 +14,38 @@ import base64
 import os
 import traceback
 import asyncio
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from openai import OpenAI
 
 # Load environment variables from .env file
 load_dotenv()
+
+# ================================================================
+#  LOGGING CONFIGURATION
+# ================================================================
+# Configure logging based on environment
+log_level = logging.DEBUG if os.getenv("DEBUG", "false").lower() == "true" else logging.INFO
+log_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+
+logging.basicConfig(
+    level=log_level,
+    format=log_format,
+    handlers=[
+        logging.StreamHandler(),  # Console output
+    ]
+)
+
+# Create logger for this module
+logger = logging.getLogger("puremark")
+logger.setLevel(log_level)
+
+# Reduce noise from third-party libraries
+logging.getLogger("paddleocr").setLevel(logging.WARNING)
+logging.getLogger("ppocr").setLevel(logging.WARNING)
+logging.getLogger("PIL").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 import re
 import json
 from dataclasses import dataclass, field
@@ -45,11 +71,11 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # - det_db_thresh=0.3: Detection threshold (lower = more detections, may include noise)
 # - det_db_box_thresh=0.5: Box threshold (higher = stricter box filtering)
 # PaddleOCR v3.3+ uses simplified API
-print("[INIT] Loading PaddleOCR model (this may take a moment on first run)...")
+logger.info("Loading PaddleOCR model (this may take a moment on first run)...")
 _paddle_ocr = PaddleOCR(
     lang="en",
 )
-print("[INIT] PaddleOCR model loaded successfully.")
+logger.info("PaddleOCR model loaded successfully.")
 
 # Thread pool executor for parallel OCR operations
 _executor = ThreadPoolExecutor(max_workers=4)
@@ -88,13 +114,13 @@ def load_halal_config(config_name: str) -> dict:
         with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
             _halal_config_cache[config_name] = config
-            print(f"[CONFIG] Loaded {config_name}: {len(config)} categories")
+            logger.info(f"[CONFIG] Loaded {config_name}: {len(config)} categories")
             return config
     except FileNotFoundError:
-        print(f"[CONFIG] WARNING: {config_name} not found at {config_path}")
+        logger.info(f"[CONFIG] WARNING: {config_name} not found at {config_path}")
         return {}
     except json.JSONDecodeError as e:
-        print(f"[CONFIG] ERROR: Invalid JSON in {config_name}: {e}")
+        logger.info(f"[CONFIG] ERROR: Invalid JSON in {config_name}: {e}")
         return {}
 
 def get_e_number_status(e_num: str) -> Tuple[Optional[str], Optional[dict]]:
@@ -1695,7 +1721,7 @@ def preprocess_for_ocr(
             upscale_factor = 1  # Large image - no upscaling needed
 
     if debug:
-        print(f"[OCR PREPROCESS] Input: {width}x{height}, min_dim={min_dim}, upscale={upscale_factor}x", flush=True)
+        logger.debug(f"[OCR PREPROCESS] Input: {width}x{height}, min_dim={min_dim}, upscale={upscale_factor}x", flush=True)
 
     if upscale_factor > 1:
         new_width = width * upscale_factor
@@ -1703,7 +1729,7 @@ def preprocess_for_ocr(
         # Use INTER_LANCZOS4 for high-quality upscaling (better than CUBIC for text)
         image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_LANCZOS4)
         if debug:
-            print(f"[OCR PREPROCESS] Upscaled to: {new_width}x{new_height}", flush=True)
+            logger.debug(f"[OCR PREPROCESS] Upscaled to: {new_width}x{new_height}", flush=True)
 
     # Step 2: Apply CLAHE on L channel (LAB color space) for contrast enhancement
     # This helps with uneven lighting on ingredient labels
@@ -1734,7 +1760,7 @@ def preprocess_for_ocr(
     rgb_image = np.clip(rgb_image, 0, 255).astype(np.uint8)
 
     if debug:
-        print(f"[OCR PREPROCESS] Output: {rgb_image.shape}", flush=True)
+        logger.debug(f"[OCR PREPROCESS] Output: {rgb_image.shape}", flush=True)
 
     return rgb_image
 
@@ -1880,12 +1906,12 @@ def run_paddle_ocr(
         result = _paddle_ocr.ocr(image)
 
     if debug:
-        print(f"[OCR DEBUG] Raw result type: {type(result)}", flush=True)
+        logger.debug(f"[OCR DEBUG] Raw result type: {type(result)}", flush=True)
 
     # Handle empty results
     if not result or (isinstance(result, list) and len(result) == 0):
         if debug:
-            print("[OCR DEBUG] Result is empty/None", flush=True)
+            logger.debug("[OCR DEBUG] Result is empty/None", flush=True)
         return "" if not return_raw_boxes else json.dumps({"boxes": [], "text": ""})
 
     # Parse OCR results into structured format
@@ -1943,13 +1969,13 @@ def run_paddle_ocr(
                         # Confidence filtering
                         if conf < min_confidence:
                             if debug:
-                                print(f"[OCR DEBUG] Filtered low confidence ({conf:.2f}): '{text}'", flush=True)
+                                logger.debug(f"[OCR DEBUG] Filtered low confidence ({conf:.2f}): '{text}'", flush=True)
                             continue
 
                         # Garbage filtering
                         if filter_garbage and _is_garbage_token(text):
                             if debug:
-                                print(f"[OCR DEBUG] Filtered garbage: '{text}'", flush=True)
+                                logger.debug(f"[OCR DEBUG] Filtered garbage: '{text}'", flush=True)
                             continue
 
                         lines.append((y_min, y_max, x_min, x_max, text, conf))
@@ -1960,11 +1986,11 @@ def run_paddle_ocr(
                         })
 
                         if debug:
-                            print(f"[OCR DEBUG] Accepted ({conf:.2f}): '{text}' at y={y_min:.0f}", flush=True)
+                            logger.debug(f"[OCR DEBUG] Accepted ({conf:.2f}): '{text}' at y={y_min:.0f}", flush=True)
 
     if not lines:
         if debug:
-            print("[OCR DEBUG] No lines after filtering", flush=True)
+            logger.debug("[OCR DEBUG] No lines after filtering", flush=True)
         return "" if not return_raw_boxes else json.dumps({"boxes": raw_boxes, "text": ""})
 
     # Return raw boxes if requested (for debugging)
@@ -1988,7 +2014,7 @@ def run_paddle_ocr(
     rows = _group_lines_by_row(lines)
 
     if debug:
-        print(f"[OCR DEBUG] Grouped into {len(rows)} rows", flush=True)
+        logger.debug(f"[OCR DEBUG] Grouped into {len(rows)} rows", flush=True)
 
     # Build text: join items in each row with space, rows with space
     text_parts = []
@@ -2002,7 +2028,7 @@ def run_paddle_ocr(
     full_text = re.sub(r"\s+", " ", full_text).strip()
 
     if debug:
-        print(f"[OCR DEBUG] Final text ({len(full_text)} chars): {full_text[:200]}...", flush=True)
+        logger.debug(f"[OCR DEBUG] Final text ({len(full_text)} chars): {full_text[:200]}...", flush=True)
 
     return full_text
 
@@ -2667,15 +2693,15 @@ def extract_ingredient_block(
         ValueError: If image cannot be decoded or processed
         Exception: If OCR fails (will be caught by caller and return 500)
     """
-    print("[OCR] Starting PaddleOCR extraction...", flush=True)
+    logger.info("[OCR] Starting PaddleOCR extraction...", flush=True)
 
     # Step 1: Decode base64 to OpenCV image
     try:
         cv2_image = decode_base64_image_to_cv2(image_data)
         height, width = cv2_image.shape[:2]
-        print(f"[OCR] Image decoded: {width}x{height}", flush=True)
+        logger.info(f"[OCR] Image decoded: {width}x{height}", flush=True)
     except ValueError as e:
-        print(f"[OCR] Image decode error: {e}", flush=True)
+        logger.info(f"[OCR] Image decode error: {e}", flush=True)
         raise
 
     # Step 2: Preprocess for better OCR accuracy
@@ -2683,9 +2709,9 @@ def extract_ingredient_block(
     try:
         preprocessed = preprocess_for_ocr(cv2_image, upscale_factor=None, debug=debug)
         prep_h, prep_w = preprocessed.shape[:2]
-        print(f"[OCR] Image preprocessed: {prep_w}x{prep_h}", flush=True)
+        logger.info(f"[OCR] Image preprocessed: {prep_w}x{prep_h}", flush=True)
     except Exception as e:
-        print(f"[OCR] Preprocessing error: {e}", flush=True)
+        logger.info(f"[OCR] Preprocessing error: {e}", flush=True)
         raise
 
     # Step 3: Run PaddleOCR with improved configuration
@@ -2698,13 +2724,13 @@ def extract_ingredient_block(
             return_raw_boxes=return_raw_boxes
         )
         if not return_raw_boxes:
-            print(f"[OCR] Extracted {len(extracted_text)} chars", flush=True)
+            logger.info(f"[OCR] Extracted {len(extracted_text)} chars", flush=True)
             preview = extracted_text[:200] + "..." if len(extracted_text) > 200 else extracted_text
-            print(f"[OCR] Text: {preview}", flush=True)
+            logger.info(f"[OCR] Text: {preview}", flush=True)
         else:
-            print(f"[OCR] Returned raw boxes JSON", flush=True)
+            logger.info(f"[OCR] Returned raw boxes JSON", flush=True)
     except Exception as e:
-        print(f"[OCR] PaddleOCR error: {e}", flush=True)
+        logger.info(f"[OCR] PaddleOCR error: {e}", flush=True)
         traceback.print_exc()
         raise
 
@@ -2724,7 +2750,7 @@ def extract_text_with_gpt_vision(image_data: str) -> str:
     Raises:
         Exception: If GPT Vision API call fails
     """
-    print("[OCR] Starting GPT Vision fallback OCR...", flush=True)
+    logger.info("[OCR] Starting GPT Vision fallback OCR...", flush=True)
 
     # Ensure proper base64 format for OpenAI Vision API
     if not image_data.startswith("data:"):
@@ -2761,9 +2787,9 @@ def extract_text_with_gpt_vision(image_data: str) -> str:
     )
 
     extracted_text = response.choices[0].message.content.strip()
-    print(f"[OCR] GPT Vision extracted {len(extracted_text)} chars", flush=True)
+    logger.info(f"[OCR] GPT Vision extracted {len(extracted_text)} chars", flush=True)
     preview = extracted_text[:200] + "..." if len(extracted_text) > 200 else extracted_text
-    print(f"[OCR] GPT Vision text: {preview}", flush=True)
+    logger.info(f"[OCR] GPT Vision text: {preview}", flush=True)
 
     return extracted_text
 
@@ -2817,7 +2843,7 @@ async def parallel_ocr(image_data: str, debug: bool = False, min_confidence: flo
                 token_count = len(re.findall(r"\w+", text))
                 results.append((text, source, token_count))
 
-                print(f"[PARALLEL OCR] {source} returned {token_count} tokens", flush=True)
+                logger.info(f"[PARALLEL OCR] {source} returned {token_count} tokens", flush=True)
 
                 # Return immediately if good enough
                 if token_count >= min_tokens:
@@ -2826,7 +2852,7 @@ async def parallel_ocr(image_data: str, debug: bool = False, min_confidence: flo
                         p.cancel()
                     return (text, source)
             except Exception as e:
-                print(f"[PARALLEL OCR] Task failed: {e}", flush=True)
+                logger.info(f"[PARALLEL OCR] Task failed: {e}", flush=True)
 
     # If we get here, neither met threshold - return best result
     if results:
@@ -2935,10 +2961,10 @@ def parse_ingredient_text(ingredient_zone: str, detected_language: Optional[str]
         result["parse_status"] = "OK"
         return result
     except Exception:
-        print("ERROR: JSON PARSE FAILED")
-        print("----- RAW MODEL OUTPUT -----")
-        print(raw)
-        print("----------------------------")
+        logger.error("ERROR: JSON PARSE FAILED")
+        logger.error("----- RAW MODEL OUTPUT -----")
+        logger.error(raw)
+        logger.error("----------------------------")
         raise
 
 # ================================================================
@@ -3033,6 +3059,10 @@ def ocr_debug():
 
 @app.route("/scan", methods=["POST"])
 def scan():
+    # Image size limits from environment
+    MAX_IMAGE_SIZE = int(os.getenv("MAX_IMAGE_SIZE", 10 * 1024 * 1024))  # 10MB default
+    MAX_IMAGE_DIMENSION = int(os.getenv("MAX_IMAGE_DIMENSION", 4096))
+
     try:
         data = request.json or {}
         image_data = data.get("image")
@@ -3042,23 +3072,60 @@ def scan():
             return jsonify({"success": False, "error": "No image provided"}), 400
 
         # DEBUG: Log image data info
-        print(f"\n[DEBUG] Image data received: {len(image_data)} chars", flush=True)
-        print(f"[DEBUG] Starts with data: prefix: {image_data.startswith('data:')}", flush=True)
-        print(f"[DEBUG] First 100 chars: {image_data[:100]}", flush=True)
+        logger.debug(f"Image data received: {len(image_data)} chars")
+        logger.debug(f"Starts with data: prefix: {image_data.startswith('data:')}")
 
         if image_data.startswith("data:"):
             image_data = image_data.split(",", 1)[1]
-            print(f"[DEBUG] After stripping prefix: {len(image_data)} chars", flush=True)
+            logger.debug(f"After stripping prefix: {len(image_data)} chars")
 
-        # Validate base64
+        # Validate base64 and decode
         try:
             import base64 as b64
             decoded = b64.b64decode(image_data)
-            print(f"[DEBUG] Decoded image size: {len(decoded)} bytes", flush=True)
-            print(f"[DEBUG] First bytes (magic): {decoded[:10].hex()}", flush=True)
+            logger.debug(f"Decoded image size: {len(decoded)} bytes")
         except Exception as e:
-            print(f"[DEBUG] Base64 decode FAILED: {e}", flush=True)
+            logger.warning(f"Base64 decode FAILED: {e}")
             return jsonify({"success": False, "error": "Invalid image encoding"}), 400
+
+        # Validate image size
+        if len(decoded) > MAX_IMAGE_SIZE:
+            max_mb = MAX_IMAGE_SIZE / (1024 * 1024)
+            logger.warning(f"Image too large: {len(decoded)} bytes (max: {MAX_IMAGE_SIZE})")
+            return jsonify({
+                "success": False,
+                "error": f"Image too large. Maximum size is {max_mb:.0f}MB"
+            }), 400
+
+        # Validate image format using magic bytes
+        magic_bytes = decoded[:10]
+        is_jpeg = magic_bytes[:2] == b'\xff\xd8'
+        is_png = magic_bytes[:8] == b'\x89PNG\r\n\x1a\n'
+        is_webp = magic_bytes[:4] == b'RIFF' and decoded[8:12] == b'WEBP'
+
+        if not (is_jpeg or is_png or is_webp):
+            logger.warning(f"Invalid image format. Magic bytes: {magic_bytes.hex()}")
+            return jsonify({
+                "success": False,
+                "error": "Invalid image format. Supported formats: JPEG, PNG, WebP"
+            }), 400
+
+        # Validate image dimensions
+        try:
+            from PIL import Image as PILImage
+            from io import BytesIO as BIO
+            img = PILImage.open(BIO(decoded))
+            width, height = img.size
+            if width > MAX_IMAGE_DIMENSION or height > MAX_IMAGE_DIMENSION:
+                logger.warning(f"Image dimensions too large: {width}x{height} (max: {MAX_IMAGE_DIMENSION})")
+                return jsonify({
+                    "success": False,
+                    "error": f"Image dimensions too large. Maximum is {MAX_IMAGE_DIMENSION}x{MAX_IMAGE_DIMENSION} pixels"
+                }), 400
+            logger.debug(f"Image validated: {width}x{height}, format={img.format}")
+        except Exception as e:
+            logger.warning(f"Failed to validate image dimensions: {e}")
+            # Continue anyway - OCR might still work
 
         # ============================================================
         #  STEP 1: OCR - Extract raw text from image
@@ -3102,18 +3169,18 @@ def scan():
         
         # DEBUG: Log zone segmentation results
         import sys
-        print("\n" + "="*60, flush=True)
-        print("DEBUG: RAW OCR TEXT FROM IMAGE:", flush=True)
-        print(raw_ocr_text, flush=True)
-        print("="*60, flush=True)
-        print("DEBUG: ZONE SEGMENTATION RESULT:", flush=True)
-        print(f"  Parse Status: {zone_result.parse_status}", flush=True)
-        print(f"  Detected Language: {zone_result.detected_language}", flush=True)
-        print(f"  Header Zone: {zone_result.header_zone[:100]}..." if len(zone_result.header_zone) > 100 else f"  Header Zone: {zone_result.header_zone}", flush=True)
-        print(f"  Ingredient Zone: {zone_result.ingredient_zone[:200]}..." if len(zone_result.ingredient_zone) > 200 else f"  Ingredient Zone: {zone_result.ingredient_zone}", flush=True)
-        print(f"  Allergen Advisory: {zone_result.allergen_advisory_zone[:100]}..." if len(zone_result.allergen_advisory_zone) > 100 else f"  Allergen Advisory: {zone_result.allergen_advisory_zone}", flush=True)
-        print(f"  Parse Notes: {zone_result.parse_notes}", flush=True)
-        print("="*60, flush=True)
+        logger.debug("=" * 60)
+        logger.debug("DEBUG: RAW OCR TEXT FROM IMAGE:", flush=True)
+        logger.debug(raw_ocr_text)
+        logger.debug("=" * 60)
+        logger.debug("DEBUG: ZONE SEGMENTATION RESULT:", flush=True)
+        logger.debug(f"Parse Status: {zone_result.parse_status}", flush=True)
+        logger.debug(f"Detected Language: {zone_result.detected_language}", flush=True)
+        logger.debug(f"Header Zone: {zone_result.header_zone[:100]}..." if len(zone_result.header_zone) > 100 else f"  Header Zone: {zone_result.header_zone}", flush=True)
+        logger.debug(f"Ingredient Zone: {zone_result.ingredient_zone[:200]}..." if len(zone_result.ingredient_zone) > 200 else f"  Ingredient Zone: {zone_result.ingredient_zone}", flush=True)
+        logger.debug(f"Allergen Advisory: {zone_result.allergen_advisory_zone[:100]}..." if len(zone_result.allergen_advisory_zone) > 100 else f"  Allergen Advisory: {zone_result.allergen_advisory_zone}", flush=True)
+        logger.debug(f"Parse Notes: {zone_result.parse_notes}", flush=True)
+        logger.debug("=" * 60)
         sys.stdout.flush()
 
         # Handle zone segmentation failures
@@ -3144,14 +3211,14 @@ def scan():
             }), 400
 
         # DEBUG: Log what GPT extracted
-        print("DEBUG: PARSED INGREDIENTS:", flush=True)
+        logger.debug("DEBUG: PARSED INGREDIENTS:", flush=True)
         for ing in parsed.get("ingredients", []):
-            print(f"  Original: {ing.get('original')}", flush=True)
-            print(f"  English:  {ing.get('english')}", flush=True)
-            print(f"  Normalized: {ing.get('normalized')}", flush=True)
-            print("  ---", flush=True)
-        print("DEBUG: DETECTED ALLERGENS (from ingredients):", parsed.get("allergens", []), flush=True)
-        print("="*60 + "\n", flush=True)
+            logger.debug(f"Original: {ing.get('original')}", flush=True)
+            logger.debug(f"English:  {ing.get('english')}", flush=True)
+            logger.debug(f"Normalized: {ing.get('normalized')}", flush=True)
+            logger.debug("---")
+        logger.debug("DEBUG: DETECTED ALLERGENS (from ingredients):", parsed.get("allergens", []), flush=True)
+        logger.debug("=" * 60)
         sys.stdout.flush()
 
         ingredients = parsed.get("ingredients", [])
@@ -3193,7 +3260,7 @@ def scan():
         # Allergens from "May contain" advisory (deterministic extraction)
         advisory_allergens = extract_allergens_from_advisory(zone_result.allergen_advisory_zone)
         
-        print(f"DEBUG: Advisory allergens extracted: {advisory_allergens}", flush=True)
+        logger.debug(f"Advisory allergens extracted: {advisory_allergens}")
         
         # ============================================================
         # ALLERGEN CORRECTION: Fix lecithin allergen detection
@@ -3432,7 +3499,7 @@ def scan():
 
 
     except Exception as e:
-        print("===== BACKEND ERROR =====")
+        logger.error("===== BACKEND ERROR =====")
         traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -3446,10 +3513,10 @@ def scan():
 def save_profile():
     data = request.json or {}
 
-    print("\n===== USER PROFILE UPDATED =====")
-    print("Diet:", data.get("diet"))
-    print("Allergies:", data.get("allergies"))
-    print("================================\n")
+    logger.info("===== USER PROFILE UPDATED =====")
+    logger.info(f"Diet: {data.get('diet')}")
+    logger.info(f"Allergies: {data.get('allergies')}")
+    logger.info("================================")
 
     with open("profile.json", "w") as f:
         json.dump(data, f, indent=2)
@@ -3495,14 +3562,14 @@ def submit_feedback():
         with open("feedback.json", "w") as f:
             json.dump(all_feedback, f, indent=2)
 
-        print("\n===== NEW FEEDBACK RECEIVED =====")
-        print(entry)
-        print("================================\n")
+        logger.info("===== NEW FEEDBACK RECEIVED =====")
+        logger.info(str(entry))
+        logger.info("================================")
 
         return jsonify({"success": True})
 
     except Exception as e:
-        print("ERROR: Error saving feedback:", e)
+        logger.error("ERROR: Error saving feedback:", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
 # ================================================================
@@ -3566,9 +3633,9 @@ def test_lecithin_detection():
             all_passed = False
         
         print(f"\n{status_icon} Original: \"{original}\" -> Normalized: \"{normalized}\"")
-        print(f"   Source:    {source} (expected: {expected_source}) {'OK' if source_ok else 'WRONG'}")
-        print(f"   Halal:     {halal_result.status} (expected: {expected_halal}) {'OK' if halal_ok else 'WRONG'}")
-        print(f"   Soy Alert: {is_soy_allergen} (expected: {expected_soy_allergen}) {'OK' if allergen_ok else 'WRONG'}")
+        logger.debug(f" Source:    {source} (expected: {expected_source}) {'OK' if source_ok else 'WRONG'}")
+        logger.debug(f" Halal:     {halal_result.status} (expected: {expected_halal}) {'OK' if halal_ok else 'WRONG'}")
+        logger.debug(f" Soy Alert: {is_soy_allergen} (expected: {expected_soy_allergen}) {'OK' if allergen_ok else 'WRONG'}")
     
     all_passed = True
     
@@ -3593,12 +3660,12 @@ def test_lecithin_detection():
             all_passed = False
         
         print(f"\n{status_icon} Test: \"{ingredient}\"")
-        print(f"   Source:    {source} (expected: {expected_source}) {'OK' if source_ok else 'WRONG'}")
-        print(f"   Halal:     {halal_result.status} (expected: {expected_halal}) {'OK' if halal_ok else 'WRONG'}")
-        print(f"   Soy Alert: {is_soy_allergen} (expected: {expected_soy_allergen}) {'OK' if allergen_ok else 'WRONG'}")
+        logger.debug(f" Source:    {source} (expected: {expected_source}) {'OK' if source_ok else 'WRONG'}")
+        logger.debug(f" Halal:     {halal_result.status} (expected: {expected_halal}) {'OK' if halal_ok else 'WRONG'}")
+        logger.debug(f" Soy Alert: {is_soy_allergen} (expected: {expected_soy_allergen}) {'OK' if allergen_ok else 'WRONG'}")
         
         if halal_result.evidence:
-            print(f"   Evidence:  {halal_result.evidence[0]}")
+            logger.debug(f" Evidence:  {halal_result.evidence[0]}")
     
     print("\n" + "=" * 60)
     if all_passed:
@@ -3715,11 +3782,11 @@ def test_zone_segmentation():
         
         status_icon = "[PASS]" if passed else "[FAIL]"
         print(f"{status_icon}")
-        print(f"  Status: {result.parse_status} (expected: {expected_status}) {'✓' if status_ok else '✗'}")
-        print(f"  Has Ingredients: {bool(result.ingredient_zone.strip())} (expected: {expected_has_ing}) {'✓' if has_ing_ok else '✗'}")
-        print(f"  Ingredient Zone: {result.ingredient_zone[:60]}..." if len(result.ingredient_zone) > 60 else f"  Ingredient Zone: {result.ingredient_zone}")
-        print(f"  Advisory Allergens: {extracted_allergens} (expected to include: {expected_allergens}) {'✓' if allergens_ok else '✗'}")
-        print(f"  Language: {result.detected_language}")
+        logger.debug(f"Status: {result.parse_status} (expected: {expected_status}) {'✓' if status_ok else '✗'}")
+        logger.debug(f"Has Ingredients: {bool(result.ingredient_zone.strip())} (expected: {expected_has_ing}) {'✓' if has_ing_ok else '✗'}")
+        logger.debug(f"Ingredient Zone: {result.ingredient_zone[:60]}..." if len(result.ingredient_zone) > 60 else f"  Ingredient Zone: {result.ingredient_zone}")
+        logger.debug(f"Advisory Allergens: {extracted_allergens} (expected to include: {expected_allergens}) {'✓' if allergens_ok else '✗'}")
+        logger.debug(f"Language: {result.detected_language}")
     
     print("\n" + "=" * 70)
     print("ZONE SEGMENTATION TEST TABLE")
@@ -3762,16 +3829,21 @@ if __name__ == "__main__":
         test_zone_segmentation()
         sys.exit(0)
     
-    print("\n==============================================")
-    print("PUREMARK BACKEND RUNNING")
-    print("OCR Engine: PaddleOCR (local)")
-    print("Parsing: GPT-4o-mini (ingredient zone only)")
-    print("Zone Segmentation: Deterministic rules")
-    print("Diet Rules: Halal & Kosher")
-    print("Server: http://0.0.0.0:5000")
-    print("==============================================\n")
+    port = int(os.getenv("PORT", 5000))
+    host = os.getenv("HOST", "0.0.0.0")
+    debug = os.getenv("DEBUG", "true").lower() == "true"
+
+    logger.info("=" * 46)
+    logger.info("PUREMARK BACKEND RUNNING")
+    logger.info("OCR Engine: PaddleOCR (local)")
+    logger.info("Parsing: GPT-4o-mini (ingredient zone only)")
+    logger.info("Zone Segmentation: Deterministic rules")
+    logger.info("Diet Rules: Halal & Kosher")
+    logger.info(f"Server: http://{host}:{port}")
+    logger.info(f"Debug Mode: {debug}")
+    logger.info("=" * 46)
 
     # Run on 0.0.0.0 to allow connections from mobile devices on the network
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host=host, port=port, debug=debug)
 
 

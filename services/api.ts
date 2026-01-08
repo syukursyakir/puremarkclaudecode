@@ -2,10 +2,12 @@
 //  API SERVICE - Connects to PureMark Flask Backend
 // ================================================================
 
-// For Android Emulator: use 10.0.2.2 (special IP that routes to host's localhost)
-// For physical device on same WiFi: use your computer's local IP address
-// You can find your IP by running: ipconfig (Windows) or ifconfig (Mac/Linux)
-export const API_BASE_URL = 'http://192.168.86.241:5000';
+import { config } from '../config';
+
+// API URL is now configured via environment variables (see config.ts)
+// Development: Set API_URL environment variable to your local IP
+// Production: Set API_URL to your production API endpoint
+export const API_BASE_URL = config.apiUrl;
 
 // ================================================================
 //  Types
@@ -72,6 +74,40 @@ export interface ScanResponse {
 // ================================================================
 
 /**
+ * Validate image before sending to API
+ * @param imageBase64 - Base64 encoded image
+ * @returns Error message if invalid, null if valid
+ */
+function validateImage(imageBase64: string): string | null {
+  // Check if image data exists
+  if (!imageBase64 || imageBase64.length === 0) {
+    return 'No image data provided';
+  }
+
+  // Estimate decoded size (base64 is ~33% larger than binary)
+  const estimatedSize = (imageBase64.length * 3) / 4;
+  if (estimatedSize > config.image.maxSizeBytes) {
+    const maxMB = config.image.maxSizeBytes / (1024 * 1024);
+    return `Image too large. Maximum size is ${maxMB}MB`;
+  }
+
+  // Check for valid base64 image format by looking at magic bytes
+  // JPEG: /9j/, PNG: iVBOR, WebP: UklGR
+  const validPrefixes = ['/9j/', 'iVBOR', 'UklGR'];
+  const hasValidFormat = validPrefixes.some(prefix => imageBase64.startsWith(prefix));
+
+  if (!hasValidFormat) {
+    // Also check if it has a data URL prefix that needs stripping
+    if (imageBase64.startsWith('data:')) {
+      return 'Image appears to have data URL prefix. Please provide raw base64.';
+    }
+    return 'Invalid image format. Supported formats: JPEG, PNG, WebP';
+  }
+
+  return null;
+}
+
+/**
  * Scan an ingredient list image and get analysis results
  * @param imageBase64 - Base64 encoded image (without data:image prefix)
  * @param profile - User's dietary profile
@@ -80,6 +116,15 @@ export async function scanIngredients(
   imageBase64: string,
   profile: UserProfile
 ): Promise<ScanResponse> {
+  // Validate image before sending
+  const validationError = validateImage(imageBase64);
+  if (validationError) {
+    return {
+      success: false,
+      error: validationError,
+    };
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/scan`, {
       method: 'POST',
@@ -94,6 +139,14 @@ export async function scanIngredients(
         },
       }),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        error: `Server error (${response.status}): ${errorText}`,
+      };
+    }
 
     const data = await response.json();
     return data;
