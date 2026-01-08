@@ -13,7 +13,13 @@ from flask_cors import CORS
 import base64
 import os
 import traceback
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from dotenv import load_dotenv
 from openai import OpenAI
+
+# Load environment variables from .env file
+load_dotenv()
 import re
 import json
 from dataclasses import dataclass, field
@@ -38,21 +44,15 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # - use_angle_cls=True: Enables text angle classification for rotated labels
 # - det_db_thresh=0.3: Detection threshold (lower = more detections, may include noise)
 # - det_db_box_thresh=0.5: Box threshold (higher = stricter box filtering)
-# - det_db_unclip_ratio=1.6: Text region expansion (higher = larger boxes for small text)
-# - rec_batch_num=6: Recognition batch size for better throughput
-# - drop_score=0.5: Drop recognized text below this confidence score
+# PaddleOCR v3.3+ uses simplified API
 print("[INIT] Loading PaddleOCR model (this may take a moment on first run)...")
 _paddle_ocr = PaddleOCR(
     lang="en",
-    use_angle_cls=True,           # Enable angle classification for rotated text
-    det_db_thresh=0.3,            # Lower detection threshold for faint text
-    det_db_box_thresh=0.5,        # Box filtering threshold
-    det_db_unclip_ratio=1.6,      # Expand text regions slightly for small fonts
-    rec_batch_num=6,              # Batch recognition for better throughput
-    drop_score=0.3,               # Drop very low confidence results at OCR level
-    show_log=False,               # Suppress verbose PaddleOCR logs
 )
 print("[INIT] PaddleOCR model loaded successfully.")
+
+# Thread pool executor for parallel OCR operations
+_executor = ThreadPoolExecutor(max_workers=4)
 
 app = Flask(__name__)
 CORS(app)
@@ -2711,6 +2711,131 @@ def extract_ingredient_block(
     return extracted_text
 
 
+def extract_text_with_gpt_vision(image_data: str) -> str:
+    """
+    Fallback OCR using GPT-4 Vision when PaddleOCR fails to extract sufficient text.
+
+    Args:
+        image_data: Base64 encoded image string (with or without data URL prefix)
+
+    Returns:
+        str: Extracted text from the image
+
+    Raises:
+        Exception: If GPT Vision API call fails
+    """
+    print("[OCR] Starting GPT Vision fallback OCR...", flush=True)
+
+    # Ensure proper base64 format for OpenAI Vision API
+    if not image_data.startswith("data:"):
+        image_data = f"data:image/jpeg;base64,{image_data}"
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "Extract ALL text visible in this food ingredient label image. "
+                            "Return ONLY the raw text you see, preserving the original language. "
+                            "Include everything: headers like 'Ingredients:', 'Ingredientes:', the ingredient list, "
+                            "allergen warnings like 'May contain...', etc. "
+                            "Do not translate or interpret - just extract the text exactly as shown on the label. "
+                            "Separate different sections with line breaks."
+                        )
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": image_data,
+                            "detail": "high"  # Use high detail for small text on ingredient labels
+                        }
+                    }
+                ]
+            }
+        ],
+        max_tokens=1000
+    )
+
+    extracted_text = response.choices[0].message.content.strip()
+    print(f"[OCR] GPT Vision extracted {len(extracted_text)} chars", flush=True)
+    preview = extracted_text[:200] + "..." if len(extracted_text) > 200 else extracted_text
+    print(f"[OCR] GPT Vision text: {preview}", flush=True)
+
+    return extracted_text
+
+
+# ================================================================
+#  PARALLEL OCR - Run PaddleOCR and GPT Vision concurrently
+# ================================================================
+
+async def async_paddle_ocr(image_data: str, debug: bool = False, min_confidence: float = 0.5) -> tuple:
+    """Async wrapper for PaddleOCR. Returns (text, 'paddleocr')"""
+    loop = asyncio.get_event_loop()
+    text = await loop.run_in_executor(
+        _executor,
+        lambda: extract_ingredient_block(image_data, debug=debug, min_confidence=min_confidence)
+    )
+    return (text, "paddleocr")
+
+
+async def async_gpt_vision(image_data: str) -> tuple:
+    """Async wrapper for GPT Vision. Returns (text, 'gpt_vision')"""
+    loop = asyncio.get_event_loop()
+    text = await loop.run_in_executor(
+        _executor,
+        lambda: extract_text_with_gpt_vision(image_data)
+    )
+    return (text, "gpt_vision")
+
+
+async def parallel_ocr(image_data: str, debug: bool = False, min_confidence: float = 0.5, min_tokens: int = 5) -> tuple:
+    """
+    Run PaddleOCR and GPT Vision in parallel.
+    Returns first result with >= min_tokens, or best result if both fail threshold.
+
+    Returns:
+        tuple: (extracted_text, source) where source is 'paddleocr' or 'gpt_vision'
+    """
+    # Create both tasks
+    paddle_task = asyncio.create_task(async_paddle_ocr(image_data, debug, min_confidence))
+    gpt_task = asyncio.create_task(async_gpt_vision(image_data))
+
+    # Wait for first good result
+    pending = {paddle_task, gpt_task}
+    results = []
+
+    while pending:
+        done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+
+        for task in done:
+            try:
+                text, source = task.result()
+                token_count = len(re.findall(r"\w+", text))
+                results.append((text, source, token_count))
+
+                print(f"[PARALLEL OCR] {source} returned {token_count} tokens", flush=True)
+
+                # Return immediately if good enough
+                if token_count >= min_tokens:
+                    # Cancel remaining tasks
+                    for p in pending:
+                        p.cancel()
+                    return (text, source)
+            except Exception as e:
+                print(f"[PARALLEL OCR] Task failed: {e}", flush=True)
+
+    # If we get here, neither met threshold - return best result
+    if results:
+        best = max(results, key=lambda x: x[2])
+        return (best[0], best[1])
+
+    return ("", "none")
+
+
 def parse_ingredient_text(ingredient_zone: str, detected_language: Optional[str] = None) -> dict:
     """
     Parse PRE-SEGMENTED ingredient zone text into structured ingredient data using GPT.
@@ -2941,18 +3066,31 @@ def scan():
         # Optional debug mode: set "ocr_debug": true in request to enable verbose logging
         ocr_debug = data.get("ocr_debug", False)
         ocr_min_confidence = data.get("ocr_min_confidence", 0.5)
-        raw_ocr_text = extract_ingredient_block(
-            image_data,
-            debug=ocr_debug,
-            min_confidence=ocr_min_confidence
-        )
+        ocr_mode = data.get("ocr_mode", "parallel")  # "parallel", "paddle_only", "gpt_only"
+
+        if ocr_mode == "paddle_only":
+            raw_ocr_text = extract_ingredient_block(image_data, debug=ocr_debug, min_confidence=ocr_min_confidence)
+            ocr_source = "paddleocr"
+        elif ocr_mode == "gpt_only":
+            raw_ocr_text = extract_text_with_gpt_vision(image_data)
+            ocr_source = "gpt_vision"
+        else:  # parallel (default)
+            raw_ocr_text, ocr_source = asyncio.run(
+                parallel_ocr(
+                    image_data,
+                    debug=ocr_debug,
+                    min_confidence=ocr_min_confidence,
+                    min_tokens=5
+                )
+            )
 
         # Basic guardrail - reject if OCR returned almost nothing
         token_count = len(re.findall(r"\w+", raw_ocr_text))
         if token_count < 3:
             return jsonify({
                 "success": False,
-                "error": "Ingredient list unclear. Please crop closer to ingredients."
+                "error": "Could not extract text from image. Please take a clearer photo of the ingredients list.",
+                "error_code": "OCR_FAILED"
             }), 400
 
         # ============================================================
@@ -3274,6 +3412,7 @@ def scan():
         return jsonify({
             "success": True,
             "detected_language": parsed.get("detected_language"),
+            "ocr_source": ocr_source,  # "paddleocr" or "gpt_vision"
 
             # ✅ UNIFIED DIET VERDICT
             "diet_verdict": diet_verdict or None,

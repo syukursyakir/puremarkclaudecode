@@ -1,48 +1,101 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
-node_modules/
+# ================================================================
+# SECRETS & ENVIRONMENT
+# ================================================================
+.env
+.env.*
+!.env.example
+*.secret
+secrets.json
+credentials.json
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
+# ================================================================
+# API KEYS & CERTIFICATES
+# ================================================================
+*.pem
+*.key
 *.p8
 *.p12
-*.key
+*.jks
 *.mobileprovision
+*.keystore
 
-# Metro
-.metro-health-check*
+# ================================================================
+# RUNTIME DATA (user-generated)
+# ================================================================
+profile.json
+feedback.json
+*.sqlite
+*.sqlite3
+*.db
 
-# debug
+# ================================================================
+# LOGS
+# ================================================================
+*.log
+logs/
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# macOS
-.DS_Store
-*.pem
+# ================================================================
+# DEPENDENCIES
+# ================================================================
+node_modules/
+venv/
+.venv/
+env/
 
-# local env files
-.env*.local
+# ================================================================
+# PYTHON
+# ================================================================
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# typescript
-*.tsbuildinfo
-
-app-example
+# ================================================================
+# EXPO / REACT NATIVE
+# ================================================================
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+*.orig.*
 
 # generated native folders
 /ios
 /android
 
-# Python
-__pycache__/
-*.pyc
-venv/
+# ================================================================
+# BUILD & CACHE
+# ================================================================
+*.tsbuildinfo
+.cache/
+build/
+.kotlin/
+
+# ================================================================
+# IDE & EDITORS
+# ================================================================
+.idea/
+*.swp
+*.swo
+*~
+
+# ================================================================
+# OS FILES
+# ================================================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ================================================================
+# PROJECT SPECIFIC
+# ================================================================
+app-example
