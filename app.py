@@ -3217,7 +3217,7 @@ def scan():
             logger.debug(f"English:  {ing.get('english')}")
             logger.debug(f"Normalized: {ing.get('normalized')}")
             logger.debug("---")
-        logger.debug("DEBUG: DETECTED ALLERGENS (from ingredients):", parsed.get("allergens", []))
+        logger.debug(f"DETECTED ALLERGENS (from ingredients): {parsed.get('allergens', [])}")
         logger.debug("=" * 60)
         sys.stdout.flush()
 
