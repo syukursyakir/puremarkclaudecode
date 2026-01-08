@@ -1897,13 +1897,17 @@ def run_paddle_ocr(
     """
     global _paddle_ocr
 
-    # Run OCR - PaddleOCR supports both ocr() and predict() methods
-    # Use ocr() which is the standard API that works across versions
+    # Run OCR - PaddleOCR v3.3+ uses predict() method
+    # The ocr() method is deprecated
     try:
-        result = _paddle_ocr.ocr(image, cls=True)
-    except TypeError:
-        # Fallback if cls parameter not supported
-        result = _paddle_ocr.ocr(image)
+        # Try the new predict() API first (PaddleOCR v3.3+)
+        result = _paddle_ocr.predict(image)
+    except AttributeError:
+        # Fallback to legacy ocr() API for older versions
+        try:
+            result = _paddle_ocr.ocr(image, cls=True)
+        except TypeError:
+            result = _paddle_ocr.ocr(image)
 
     if debug:
         logger.debug(f"[OCR DEBUG] Raw result type: {type(result)}")
@@ -2760,21 +2764,25 @@ def extract_text_with_gpt_vision(image_data: str) -> str:
         model="gpt-4o",  # Use full gpt-4o for better OCR accuracy (not mini)
         messages=[
             {
+                "role": "system",
+                "content": (
+                    "You are a helpful assistant that reads text from images of food product labels. "
+                    "Your task is to transcribe the text exactly as it appears. This is used to help "
+                    "people with dietary restrictions (halal, kosher, allergies) understand what's in their food."
+                )
+            },
+            {
                 "role": "user",
                 "content": [
                     {
                         "type": "text",
                         "text": (
-                            "You are an expert OCR system for food labels. Extract ALL text from this ingredient label image.\n\n"
-                            "CRITICAL REQUIREMENTS:\n"
-                            "1. Extract EVERY word visible - do not skip or summarize\n"
-                            "2. Include the full ingredient list with all items\n"
-                            "3. Include allergen warnings (e.g., 'May contain...', 'Peut contenir...', 'Contains...')\n"
-                            "4. Include percentage information (e.g., 'Cacao: 52%')\n"
-                            "5. Preserve original language - do NOT translate\n"
-                            "6. Preserve parentheses and their contents (e.g., 'lécithine de tournesol')\n"
-                            "7. Separate sections with line breaks\n\n"
-                            "Return ONLY the extracted text, nothing else."
+                            "Please read and transcribe all the text from this food ingredient label. "
+                            "Include:\n"
+                            "- The ingredient list\n"
+                            "- Any allergen warnings (May contain, Peut contenir, etc.)\n"
+                            "- Nutritional percentages if visible\n\n"
+                            "Keep the original language, don't translate. Just return the text you see."
                         )
                     },
                     {
@@ -2787,7 +2795,7 @@ def extract_text_with_gpt_vision(image_data: str) -> str:
                 ]
             }
         ],
-        max_tokens=2000  # Increased for longer ingredient lists
+        max_tokens=2000
     )
 
     extracted_text = response.choices[0].message.content.strip()
