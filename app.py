@@ -2757,7 +2757,7 @@ def extract_text_with_gpt_vision(image_data: str) -> str:
         image_data = f"data:image/jpeg;base64,{image_data}"
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4o",  # Use full gpt-4o for better OCR accuracy (not mini)
         messages=[
             {
                 "role": "user",
@@ -2765,25 +2765,29 @@ def extract_text_with_gpt_vision(image_data: str) -> str:
                     {
                         "type": "text",
                         "text": (
-                            "Extract ALL text visible in this food ingredient label image. "
-                            "Return ONLY the raw text you see, preserving the original language. "
-                            "Include everything: headers like 'Ingredients:', 'Ingredientes:', the ingredient list, "
-                            "allergen warnings like 'May contain...', etc. "
-                            "Do not translate or interpret - just extract the text exactly as shown on the label. "
-                            "Separate different sections with line breaks."
+                            "You are an expert OCR system for food labels. Extract ALL text from this ingredient label image.\n\n"
+                            "CRITICAL REQUIREMENTS:\n"
+                            "1. Extract EVERY word visible - do not skip or summarize\n"
+                            "2. Include the full ingredient list with all items\n"
+                            "3. Include allergen warnings (e.g., 'May contain...', 'Peut contenir...', 'Contains...')\n"
+                            "4. Include percentage information (e.g., 'Cacao: 52%')\n"
+                            "5. Preserve original language - do NOT translate\n"
+                            "6. Preserve parentheses and their contents (e.g., 'lécithine de tournesol')\n"
+                            "7. Separate sections with line breaks\n\n"
+                            "Return ONLY the extracted text, nothing else."
                         )
                     },
                     {
                         "type": "image_url",
                         "image_url": {
                             "url": image_data,
-                            "detail": "high"  # Use high detail for small text on ingredient labels
+                            "detail": "high"
                         }
                     }
                 ]
             }
         ],
-        max_tokens=1000
+        max_tokens=2000  # Increased for longer ingredient lists
     )
 
     extracted_text = response.choices[0].message.content.strip()
@@ -2821,7 +2825,7 @@ async def async_gpt_vision(image_data: str) -> tuple:
 async def parallel_ocr(image_data: str, debug: bool = False, min_confidence: float = 0.5, min_tokens: int = 5) -> tuple:
     """
     Run PaddleOCR and GPT Vision in parallel.
-    Returns first result with >= min_tokens, or best result if both fail threshold.
+    Waits for BOTH results and returns the one with more content.
 
     Returns:
         tuple: (extracted_text, source) where source is 'paddleocr' or 'gpt_vision'
@@ -2830,33 +2834,50 @@ async def parallel_ocr(image_data: str, debug: bool = False, min_confidence: flo
     paddle_task = asyncio.create_task(async_paddle_ocr(image_data, debug, min_confidence))
     gpt_task = asyncio.create_task(async_gpt_vision(image_data))
 
-    # Wait for first good result
-    pending = {paddle_task, gpt_task}
+    # Wait for ALL results to complete (with timeout)
     results = []
 
-    while pending:
-        done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+    try:
+        # Wait for both with a reasonable timeout
+        done, pending = await asyncio.wait(
+            {paddle_task, gpt_task},
+            timeout=30.0,  # 30 second timeout
+            return_when=asyncio.ALL_COMPLETED
+        )
 
+        # Cancel any that didn't complete
+        for task in pending:
+            task.cancel()
+
+        # Collect results
         for task in done:
             try:
                 text, source = task.result()
                 token_count = len(re.findall(r"\w+", text))
-                results.append((text, source, token_count))
-
-                logger.info(f"[PARALLEL OCR] {source} returned {token_count} tokens")
-
-                # Return immediately if good enough
-                if token_count >= min_tokens:
-                    # Cancel remaining tasks
-                    for p in pending:
-                        p.cancel()
-                    return (text, source)
+                char_count = len(text)
+                results.append((text, source, token_count, char_count))
+                logger.info(f"[PARALLEL OCR] {source} returned {token_count} tokens, {char_count} chars")
             except Exception as e:
-                logger.info(f"[PARALLEL OCR] Task failed: {e}")
+                logger.warning(f"[PARALLEL OCR] Task failed: {e}")
 
-    # If we get here, neither met threshold - return best result
+    except asyncio.TimeoutError:
+        logger.warning("[PARALLEL OCR] Timeout waiting for OCR tasks")
+        # Try to get any completed results
+        for task in [paddle_task, gpt_task]:
+            if task.done() and not task.cancelled():
+                try:
+                    text, source = task.result()
+                    token_count = len(re.findall(r"\w+", text))
+                    char_count = len(text)
+                    results.append((text, source, token_count, char_count))
+                except:
+                    pass
+
+    # Pick the best result (most characters, as that likely means more complete extraction)
     if results:
-        best = max(results, key=lambda x: x[2])
+        # Sort by character count (descending) - more chars = more complete OCR
+        best = max(results, key=lambda x: x[3])
+        logger.info(f"[PARALLEL OCR] Selected {best[1]} with {best[2]} tokens, {best[3]} chars")
         return (best[0], best[1])
 
     return ("", "none")
