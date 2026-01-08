@@ -3,7 +3,7 @@
 # ================================================================
 #
 # Dependencies:
-#   pip install flask flask-cors openai
+#   pip install flask flask-cors openai anthropic
 #   pip install paddleocr paddlepaddle opencv-python pillow numpy
 #
 # ================================================================
@@ -18,6 +18,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from openai import OpenAI
+from anthropic import Anthropic
 
 # Load environment variables from .env file
 load_dotenv()
@@ -60,6 +61,9 @@ from paddleocr import PaddleOCR
 
 # ---------------- INIT OPENAI CLIENT ----------------
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# ---------------- INIT ANTHROPIC CLIENT ----------------
+anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 # ---------------- INIT PADDLEOCR (SINGLETON) ----------------
 # PaddleOCR supports 80+ languages. For English+French, use "en" (covers Latin scripts).
@@ -2806,8 +2810,77 @@ def extract_text_with_gpt_vision(image_data: str) -> str:
     return extracted_text
 
 
+def extract_text_with_claude(image_data: str) -> str:
+    """
+    Primary OCR using Claude 3.5 Haiku - excellent at text extraction from images.
+
+    Args:
+        image_data: Base64 encoded image string (without data URL prefix)
+
+    Returns:
+        str: Extracted text from the image
+
+    Raises:
+        Exception: If Claude API call fails
+    """
+    logger.info("[OCR] Starting Claude Haiku OCR...")
+
+    # Remove data URL prefix if present (Claude expects raw base64)
+    if image_data.startswith("data:"):
+        image_data = image_data.split(",", 1)[1]
+
+    # Detect media type from base64 magic bytes
+    media_type = "image/jpeg"  # default
+    if image_data.startswith("iVBOR"):
+        media_type = "image/png"
+    elif image_data.startswith("UklGR"):
+        media_type = "image/webp"
+
+    response = anthropic_client.messages.create(
+        model="claude-3-5-haiku-20241022",  # Claude 3.5 Haiku - fast and excellent at OCR
+        max_tokens=2000,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "Please read and transcribe ALL text from this food ingredient label image. "
+                            "This is used to help people with dietary restrictions (halal, kosher, allergies) "
+                            "understand what ingredients are in their food.\n\n"
+                            "Include:\n"
+                            "- The complete ingredient list (every single ingredient)\n"
+                            "- Allergen warnings (e.g., 'May contain...', 'Peut contenir...', 'Contains...')\n"
+                            "- Percentage information (e.g., 'Cacao: 52%')\n"
+                            "- Any other text visible on the label\n\n"
+                            "Keep the original language - do NOT translate. "
+                            "Return ONLY the transcribed text, nothing else."
+                        )
+                    },
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": media_type,
+                            "data": image_data
+                        }
+                    }
+                ]
+            }
+        ]
+    )
+
+    extracted_text = response.content[0].text.strip()
+    logger.info(f"[OCR] Claude Haiku extracted {len(extracted_text)} chars")
+    preview = extracted_text[:200] + "..." if len(extracted_text) > 200 else extracted_text
+    logger.info(f"[OCR] Claude Haiku text: {preview}")
+
+    return extracted_text
+
+
 # ================================================================
-#  PARALLEL OCR - Run PaddleOCR and GPT Vision concurrently
+#  PARALLEL OCR - Run PaddleOCR and Claude Vision concurrently
 # ================================================================
 
 async def async_paddle_ocr(image_data: str, debug: bool = False, min_confidence: float = 0.5) -> tuple:
@@ -2820,8 +2893,18 @@ async def async_paddle_ocr(image_data: str, debug: bool = False, min_confidence:
     return (text, "paddleocr")
 
 
+async def async_claude_vision(image_data: str) -> tuple:
+    """Async wrapper for Claude Vision. Returns (text, 'claude_haiku')"""
+    loop = asyncio.get_event_loop()
+    text = await loop.run_in_executor(
+        _executor,
+        lambda: extract_text_with_claude(image_data)
+    )
+    return (text, "claude_haiku")
+
+
 async def async_gpt_vision(image_data: str) -> tuple:
-    """Async wrapper for GPT Vision. Returns (text, 'gpt_vision')"""
+    """Async wrapper for GPT Vision (fallback). Returns (text, 'gpt_vision')"""
     loop = asyncio.get_event_loop()
     text = await loop.run_in_executor(
         _executor,
@@ -2832,15 +2915,15 @@ async def async_gpt_vision(image_data: str) -> tuple:
 
 async def parallel_ocr(image_data: str, debug: bool = False, min_confidence: float = 0.5, min_tokens: int = 5) -> tuple:
     """
-    Run PaddleOCR and GPT Vision in parallel.
+    Run PaddleOCR and Claude Haiku in parallel.
     Waits for BOTH results and returns the one with more content.
 
     Returns:
-        tuple: (extracted_text, source) where source is 'paddleocr' or 'gpt_vision'
+        tuple: (extracted_text, source) where source is 'paddleocr' or 'claude_haiku'
     """
-    # Create both tasks
+    # Create both tasks - Claude Haiku is primary, PaddleOCR as backup
     paddle_task = asyncio.create_task(async_paddle_ocr(image_data, debug, min_confidence))
-    gpt_task = asyncio.create_task(async_gpt_vision(image_data))
+    claude_task = asyncio.create_task(async_claude_vision(image_data))
 
     # Wait for ALL results to complete (with timeout)
     results = []
@@ -2848,7 +2931,7 @@ async def parallel_ocr(image_data: str, debug: bool = False, min_confidence: flo
     try:
         # Wait for both with a reasonable timeout
         done, pending = await asyncio.wait(
-            {paddle_task, gpt_task},
+            {paddle_task, claude_task},
             timeout=30.0,  # 30 second timeout
             return_when=asyncio.ALL_COMPLETED
         )
@@ -2871,7 +2954,7 @@ async def parallel_ocr(image_data: str, debug: bool = False, min_confidence: flo
     except asyncio.TimeoutError:
         logger.warning("[PARALLEL OCR] Timeout waiting for OCR tasks")
         # Try to get any completed results
-        for task in [paddle_task, gpt_task]:
+        for task in [paddle_task, claude_task]:
             if task.done() and not task.cancelled():
                 try:
                     text, source = task.result()
