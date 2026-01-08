@@ -1,0 +1,28 @@
+# PureMark Supabase Project Configuration
+
+[project]
+id = "xnzgmgjuxisclvjvnppy"
+
+[api]
+# API URL: https://xnzgmgjuxisclvjvnppy.supabase.co
+enabled = true
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[functions]
+verify_jwt = false  # Allow unauthenticated access to edge functions
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = []
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = false
+enable_confirmations = false
