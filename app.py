@@ -2761,7 +2761,7 @@ def extract_text_with_gpt_vision(image_data: str) -> str:
         image_data = f"data:image/jpeg;base64,{image_data}"
 
     response = client.chat.completions.create(
-        model="gpt-4o",  # Use full gpt-4o for better OCR accuracy (not mini)
+        model="gpt-5-mini",  # GPT-5 series has improved vision capabilities
         messages=[
             {
                 "role": "system",
