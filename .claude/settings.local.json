@@ -23,7 +23,8 @@
       "Bash(cmd.exe /c \"type c:\\\\Users\\\\syaki\\\\Desktop\\\\PUREMARKTESTAGAIN\\\\PureMark\\\\app.py\")",
       "Bash(npm i:*)",
       "Bash(sudo npm:*)",
-      "Bash(npx @anthropic-ai/claude-code)"
+      "Bash(npx @anthropic-ai/claude-code)",
+      "Bash(git commit:*)"
     ]
   }
 }

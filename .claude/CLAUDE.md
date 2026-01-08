@@ -13,6 +13,7 @@ Rules:
 - Only ask if an action is destructive (e.g. deleting large directories, wiping data)
 - Prefer acting immediately and explaining after
 - Use best engineering judgment
+- After every code edit, automatically run `git add .` and `git commit -m "SUITABLE_MESSAGE"` (no push)
 
 The user explicitly grants permission for normal development actions.
 
