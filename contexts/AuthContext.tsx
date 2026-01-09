@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
-import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import { makeRedirectUri } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert, Platform } from 'react-native';
 
-// Required for expo-auth-session
+// Required for expo-web-browser to close properly
 WebBrowser.maybeCompleteAuthSession();
 
 interface AuthContextType {
@@ -61,73 +62,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      // Create redirect URI for Expo
-      const redirectUri = makeRedirectUri({
+      // Create redirect URL using AuthSession for proper Expo Go handling
+      const redirectUrl = AuthSession.makeRedirectUri({
         scheme: 'puremark',
         path: 'auth/callback',
       });
-
-      console.log('Redirect URI:', redirectUri);
+      console.log('Redirect URL:', redirectUrl);
 
       // Get the OAuth URL from Supabase
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUri,
-          skipBrowserRedirect: true, // Don't auto-redirect, we'll handle it
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
         },
       });
 
       if (error) throw error;
       if (!data.url) throw new Error('No OAuth URL returned');
 
-      console.log('Opening OAuth URL:', data.url);
+      console.log('Opening Google sign-in...');
+      console.log('OAuth URL:', data.url);
 
-      // Open the OAuth URL in a web browser
+      // Use openAuthSessionAsync which properly handles the OAuth redirect
       const result = await WebBrowser.openAuthSessionAsync(
         data.url,
-        redirectUri
+        redirectUrl,
+        {
+          showInRecents: false,
+          preferEphemeralSession: true,
+        }
       );
 
-      console.log('Auth result:', result);
+      console.log('Auth session result:', result);
 
       if (result.type === 'success' && result.url) {
-        // Extract the tokens from the URL
-        const url = new URL(result.url);
+        console.log('Success! URL:', result.url);
 
-        // Check for hash fragment (Supabase returns tokens in hash)
-        const hashParams = new URLSearchParams(url.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
+        // Extract tokens from the URL fragment
+        const url = result.url;
+        let accessToken: string | null = null;
+        let refreshToken: string | null = null;
 
-        if (accessToken) {
-          // Set the session with the tokens
-          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        // Tokens are in the URL fragment (after #)
+        if (url.includes('#')) {
+          const fragment = url.split('#')[1];
+          const params = new URLSearchParams(fragment);
+          accessToken = params.get('access_token');
+          refreshToken = params.get('refresh_token');
+        }
+
+        if (accessToken && refreshToken) {
+          console.log('Got tokens, setting session...');
+          const { error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
-            refresh_token: refreshToken || '',
+            refresh_token: refreshToken,
           });
 
-          if (sessionError) throw sessionError;
-
-          console.log('Session set successfully:', sessionData.user?.email);
+          if (sessionError) {
+            console.error('Session error:', sessionError);
+            Alert.alert('Login Error', sessionError.message);
+          } else {
+            console.log('Login successful!');
+            // Clear guest state since user is now logged in
+            setIsGuest(false);
+            await AsyncStorage.removeItem('@puremark_is_guest');
+          }
         } else {
-          // Check for error in URL
-          const errorParam = url.searchParams.get('error');
-          const errorDescription = url.searchParams.get('error_description');
-          if (errorParam) {
-            throw new Error(errorDescription || errorParam);
+          console.log('No tokens found in URL');
+          // Try to get session anyway (might have been set via URL listener)
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            console.log('Session found:', sessionData.session.user?.email);
           }
         }
       } else if (result.type === 'cancel') {
-        console.log('User cancelled the auth flow');
+        console.log('User cancelled sign-in');
+      } else if (result.type === 'dismiss') {
+        console.log('Browser was dismissed');
+        // Check if session was established anyway
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) {
+          console.log('Session found after dismiss:', sessionData.session.user?.email);
+        }
       }
     } catch (error) {
       console.error('Error signing in with Google:', error);
-      throw error;
+      Alert.alert('Sign In Error', 'Failed to sign in with Google. Please try again.');
     }
   };
 
