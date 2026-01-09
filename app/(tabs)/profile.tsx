@@ -7,12 +7,16 @@ import {
   Pressable,
   Switch,
   Animated,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
 import { getProfile, saveProfile } from '@/services/storage';
 import { UserProfile } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DietaryOption {
   id: 'halal' | 'kosher';
@@ -44,6 +48,9 @@ export default function ProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(-20)).current;
+
+  const { user, isGuest, signOut, signInWithGoogle } = useAuth();
+  const router = useRouter();
 
   // Load saved preferences on mount
   useEffect(() => {
@@ -235,8 +242,73 @@ export default function ProfileScreen() {
         {/* Account Section */}
         <Text style={styles.sectionTitle}>Account</Text>
         <View style={styles.card}>
+          {user ? (
+            <>
+              <View style={styles.accountRow}>
+                <View style={styles.avatarContainer}>
+                  <Ionicons name="person-circle" size={48} color={Colors.gray400} />
+                </View>
+                <View style={styles.accountInfo}>
+                  <Text style={styles.accountEmail}>{user.email}</Text>
+                  <Text style={styles.accountStatus}>Signed in with Google</Text>
+                </View>
+              </View>
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.signOutButton}
+                onPress={() => {
+                  Alert.alert(
+                    'Sign Out',
+                    'Are you sure you want to sign out?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Sign Out',
+                        style: 'destructive',
+                        onPress: async () => {
+                          await signOut();
+                          router.replace('/login');
+                        },
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+                <Text style={styles.signOutText}>Sign Out</Text>
+              </TouchableOpacity>
+            </>
+          ) : isGuest ? (
+            <>
+              <View style={styles.guestInfo}>
+                <Ionicons name="person-outline" size={24} color={Colors.gray400} />
+                <Text style={styles.guestText}>Using as Guest</Text>
+              </View>
+              <Text style={styles.guestNote}>
+                Sign in to sync your preferences and history across devices
+              </Text>
+              <TouchableOpacity
+                style={styles.signInButton}
+                onPress={signInWithGoogle}
+              >
+                <Ionicons name="logo-google" size={18} color={Colors.white} />
+                <Text style={styles.signInButtonText}>Sign in with Google</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity
+              style={styles.signInButton}
+              onPress={() => router.push('/login')}
+            >
+              <Text style={styles.signInButtonText}>Sign In</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* App Info */}
+        <View style={[styles.card, { marginTop: Spacing.md }]}>
           <Text style={styles.versionLabel}>Version</Text>
-          <Text style={styles.versionValue}>1.0.0 (Prototype)</Text>
+          <Text style={styles.versionValue}>1.0.0</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -400,5 +472,67 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: Colors.black,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  avatarContainer: {
+    marginRight: Spacing.md,
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountEmail: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.black,
+    marginBottom: 2,
+  },
+  accountStatus: {
+    fontSize: 13,
+    color: Colors.gray500,
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  signOutText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.error,
+  },
+  guestInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  guestText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.gray600,
+  },
+  guestNote: {
+    fontSize: 13,
+    color: Colors.gray500,
+    marginBottom: Spacing.md,
+  },
+  signInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.black,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
+  },
+  signInButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.white,
   },
 });
