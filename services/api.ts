@@ -1,13 +1,22 @@
 // ================================================================
-//  API SERVICE - Connects to PureMark Flask Backend
+//  API SERVICE - Connects to PureMark Supabase Backend
 // ================================================================
 
 import { config } from '../config';
+import {
+  scanIngredients as supabaseScan,
+  checkHealth as supabaseHealth,
+  submitFeedback as supabaseFeedback,
+} from './supabase';
 
-// API URL is now configured via environment variables (see config.ts)
-// Development: Set API_URL environment variable to your local IP
-// Production: Set API_URL to your production API endpoint
+// Supabase Edge Function URL (primary)
+const SUPABASE_URL = 'https://xnzgmgjuxisclvjvnppy.supabase.co/functions/v1';
+
+// Legacy Flask backend URL (fallback during transition)
 export const API_BASE_URL = config.apiUrl;
+
+// Feature flag: Use Supabase backend (set to true to use Supabase)
+const USE_SUPABASE = true;
 
 // ================================================================
 //  Types
@@ -125,6 +134,12 @@ export async function scanIngredients(
     };
   }
 
+  // Use Supabase backend (primary)
+  if (USE_SUPABASE) {
+    return supabaseScan(imageBase64, profile);
+  }
+
+  // Legacy Flask backend (fallback)
   try {
     const response = await fetch(`${API_BASE_URL}/scan`, {
       method: 'POST',
@@ -163,6 +178,10 @@ export async function scanIngredients(
  * Check if the backend is reachable
  */
 export async function checkHealth(): Promise<boolean> {
+  if (USE_SUPABASE) {
+    return supabaseHealth();
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
@@ -184,6 +203,14 @@ export async function submitFeedback(feedback: {
   message: string;
   images?: string[];
 }): Promise<{ success: boolean; error?: string }> {
+  if (USE_SUPABASE) {
+    return supabaseFeedback({
+      category: feedback.category,
+      message: feedback.message,
+      images: feedback.images,
+    });
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/submit_feedback`, {
       method: 'POST',
