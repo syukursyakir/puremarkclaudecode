@@ -3,7 +3,7 @@
 //  Supports: Railway (FastAPI), Supabase Edge Functions, Local
 // ================================================================
 
-import { config, BACKEND_TYPE } from '../config';
+import { API_URL, BACKEND_TYPE, config } from '../config';
 import {
   scanIngredients as supabaseScan,
   checkHealth as supabaseHealth,
@@ -11,7 +11,7 @@ import {
 } from './supabase';
 
 // API Base URL from config
-export const API_BASE_URL = config.apiUrl;
+export const API_BASE_URL = API_URL;
 
 // Backend selection based on config
 const USE_SUPABASE = BACKEND_TYPE === 'supabase';

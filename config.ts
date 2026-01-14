@@ -22,11 +22,14 @@ export type BackendType = 'railway' | 'supabase' | 'local';
 export const BACKEND_TYPE: BackendType = 'railway';
 
 // Backend URLs
-const BACKEND_URLS = {
+const BACKEND_URLS: Record<BackendType, string> = {
   railway: 'https://puremarkclaudecode-production.up.railway.app',
   supabase: 'https://xnzgmgjuxisclvjvnppy.supabase.co/functions/v1',
   local: __DEV__ ? 'http://10.0.2.2:8000' : 'http://localhost:8000',
 };
+
+// Direct URL export for easy access
+export const API_URL: string = BACKEND_URLS[BACKEND_TYPE];
 
 // API Configuration
 const getApiUrl = (): string => {
