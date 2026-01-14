@@ -3,6 +3,7 @@
 # Claude 3.5 Haiku for text extraction, GPT-4o-mini for parsing
 # ================================================================
 
+import anthropic
 import httpx
 import json
 from typing import Dict, Any
@@ -20,12 +21,6 @@ async def extract_text_with_claude_vision(image_base64: str, api_key: str) -> st
         Extracted text from the image
     """
 
-    headers = {
-        "x-api-key": api_key,
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01"
-    }
-
     # Detect image type from base64 header
     media_type = "image/jpeg"  # default
     if image_base64.startswith("/9j/"):
@@ -35,10 +30,13 @@ async def extract_text_with_claude_vision(image_base64: str, api_key: str) -> st
     elif image_base64.startswith("UklGR"):
         media_type = "image/webp"
 
-    payload = {
-        "model": "claude-3-5-haiku-20241022",
-        "max_tokens": 2000,
-        "messages": [
+    # Use official Anthropic SDK
+    client = anthropic.Anthropic(api_key=api_key)
+
+    message = client.messages.create(
+        model="claude-3-5-haiku-20241022",
+        max_tokens=2000,
+        messages=[
             {
                 "role": "user",
                 "content": [
@@ -59,18 +57,9 @@ Return ONLY the raw text, no commentary or formatting."""
                 ]
             }
         ]
-    }
+    )
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(
-            "https://api.anthropic.com/v1/messages",
-            headers=headers,
-            json=payload
-        )
-        response.raise_for_status()
-
-        data = response.json()
-        return data["content"][0]["text"]
+    return message.content[0].text
 
 
 # Keep the old function name as alias for compatibility

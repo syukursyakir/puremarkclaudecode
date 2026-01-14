@@ -8,6 +8,7 @@ python-multipart>=0.0.9
 
 # AI APIs
 openai>=1.12.0
+anthropic>=0.40.0
 
 # HTTP client
 httpx>=0.26.0
