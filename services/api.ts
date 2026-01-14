@@ -1,22 +1,21 @@
 // ================================================================
-//  API SERVICE - Connects to PureMark Supabase Backend
+//  API SERVICE - Connects to PureMark Backend
+//  Supports: Railway (FastAPI), Supabase Edge Functions, Local
 // ================================================================
 
-import { config } from '../config';
+import { config, BACKEND_TYPE } from '../config';
 import {
   scanIngredients as supabaseScan,
   checkHealth as supabaseHealth,
   submitFeedback as supabaseFeedback,
 } from './supabase';
 
-// Supabase Edge Function URL (primary)
-const SUPABASE_URL = 'https://xnzgmgjuxisclvjvnppy.supabase.co/functions/v1';
-
-// Legacy Flask backend URL (fallback during transition)
+// API Base URL from config
 export const API_BASE_URL = config.apiUrl;
 
-// Feature flag: Use Supabase backend (set to true to use Supabase)
-const USE_SUPABASE = true;
+// Backend selection based on config
+const USE_SUPABASE = BACKEND_TYPE === 'supabase';
+const USE_RAILWAY = BACKEND_TYPE === 'railway' || BACKEND_TYPE === 'local';
 
 // ================================================================
 //  Types
@@ -134,13 +133,14 @@ export async function scanIngredients(
     };
   }
 
-  // Use Supabase backend (primary)
+  // Use Supabase Edge Functions
   if (USE_SUPABASE) {
     return supabaseScan(imageBase64, profile);
   }
 
-  // Legacy Flask backend (fallback)
+  // Use Railway FastAPI backend (or local development server)
   try {
+    console.log(`[API] Using ${BACKEND_TYPE} backend at ${API_BASE_URL}`);
     const response = await fetch(`${API_BASE_URL}/scan`, {
       method: 'POST',
       headers: {
@@ -182,6 +182,7 @@ export async function checkHealth(): Promise<boolean> {
     return supabaseHealth();
   }
 
+  // Railway/Local FastAPI health check
   try {
     const response = await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',

@@ -9,23 +9,41 @@ import Constants from 'expo-constants';
 // Get extra config from app.config.js or app.json
 const extra = Constants.expoConfig?.extra ?? {};
 
+// ================================================================
+// Backend Selection
+// ================================================================
+// Choose which backend to use:
+// - 'railway': FastAPI on Railway (recommended for production)
+// - 'supabase': Supabase Edge Functions
+// - 'local': Local development server
+export type BackendType = 'railway' | 'supabase' | 'local';
+
+// Set this to switch backends
+export const BACKEND_TYPE: BackendType = 'railway';
+
+// Backend URLs
+const BACKEND_URLS = {
+  // TODO: Replace with your actual Railway URL after deployment
+  railway: 'https://puremark-backend-production.up.railway.app',
+  supabase: 'https://xnzgmgjuxisclvjvnppy.supabase.co/functions/v1',
+  local: __DEV__ ? 'http://10.0.2.2:8000' : 'http://localhost:8000',
+};
+
 // API Configuration
-// Priority: 1. Environment variable, 2. Default based on platform
-const getDefaultApiUrl = (): string => {
-  // For development, detect platform and use appropriate localhost
-  if (__DEV__) {
-    // Android emulator uses 10.0.2.2 to access host machine
-    // iOS simulator and web can use localhost directly
-    // For physical devices, you'll need to set API_URL in your environment
-    return 'http://10.0.2.2:5000';
+const getApiUrl = (): string => {
+  // Allow environment override
+  if (extra.apiUrl) {
+    return extra.apiUrl as string;
   }
-  // Production default (should be overridden via environment)
-  return 'https://api.puremark.app';
+  return BACKEND_URLS[BACKEND_TYPE];
 };
 
 export const config = {
-  // API base URL - configurable via environment
-  apiUrl: (extra.apiUrl as string) || getDefaultApiUrl(),
+  // Backend type
+  backendType: BACKEND_TYPE,
+
+  // API base URL - automatically selected based on backend type
+  apiUrl: getApiUrl(),
 
   // Image upload constraints
   image: {
