@@ -16,6 +16,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
 import { getScanHistory, ScanHistoryItem, ComplianceStatus, deleteScan, renameScan } from '@/services/storage';
+import { loadScanHistory as loadCloudHistory, deleteScan as deleteCloudScan } from '@/services/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MAX_NAME_LENGTH = 30;
@@ -57,6 +59,7 @@ const statusConfig = {
 };
 
 export default function HistoryScreen() {
+  const { user } = useAuth();
   const [historyData, setHistoryData] = useState<ScanHistoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -92,8 +95,44 @@ export default function HistoryScreen() {
 
   const loadHistory = async () => {
     try {
-      const data = await getScanHistory();
-      setHistoryData(data);
+      // Always load local history first
+      const localData = await getScanHistory();
+
+      // For authenticated users, also try to load cloud history
+      if (user) {
+        try {
+          const cloudData = await loadCloudHistory();
+          // Convert cloud data to local format and merge
+          const cloudItems: ScanHistoryItem[] = cloudData.map((item: any) => ({
+            id: item.id,
+            productName: item.product_name || 'Unknown Product',
+            date: new Date(item.scan_timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            time: new Date(item.scan_timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+            timestamp: new Date(item.scan_timestamp).getTime(),
+            ingredientsCount: item.analysis?.length || 0,
+            status: determineStatus(item.diet_verdict),
+            imageColor: '#E8D4B8',
+            diet: item.diet_verdict?.halal ? 'halal' : item.diet_verdict?.kosher ? 'kosher' : null,
+            dietVerdict: item.diet_verdict,
+            ingredients: item.analysis || [],
+            allergens: item.allergens || [],
+            detectedLanguage: item.detected_language,
+          }));
+
+          // Merge cloud and local, preferring local items with same ID
+          const localIds = new Set(localData.map(item => item.id));
+          const uniqueCloudItems = cloudItems.filter(item => !localIds.has(item.id));
+          const mergedData = [...localData, ...uniqueCloudItems].sort((a, b) => b.timestamp - a.timestamp);
+
+          setHistoryData(mergedData);
+        } catch (cloudError) {
+          console.log('[History] Cloud sync failed, using local only:', cloudError);
+          setHistoryData(localData);
+        }
+      } else {
+        setHistoryData(localData);
+      }
+
       // Reset animations for new items
       itemAnimations.current = {};
     } catch (error) {
@@ -101,6 +140,16 @@ export default function HistoryScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper to determine compliance status from diet verdict
+  const determineStatus = (dietVerdict: any): ComplianceStatus => {
+    if (!dietVerdict) return 'conditionally';
+    const halal = dietVerdict.halal;
+    const kosher = dietVerdict.kosher;
+    if (halal?.status === 'HALAL' || kosher?.status === 'KOSHER_CONFIRMED') return 'compliant';
+    if (halal?.status === 'HARAM' || kosher?.status === 'NOT_KOSHER') return 'not_compliant';
+    return 'conditionally';
   };
 
   const onRefresh = async () => {
@@ -169,6 +218,12 @@ export default function HistoryScreen() {
         // After animation, delete from storage and update state
         try {
           await deleteScan(itemId);
+          // Also delete from cloud for authenticated users (non-blocking)
+          if (user) {
+            deleteCloudScan(itemId).catch((err) => {
+              console.log('[History] Cloud delete skipped:', err?.message);
+            });
+          }
           setHistoryData(prev => prev.filter(item => item.id !== itemId));
           // Clean up the animation reference
           delete itemAnimations.current[itemId];

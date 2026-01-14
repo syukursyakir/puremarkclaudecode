@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
 import { getProfile, saveProfile } from '@/services/storage';
+import { saveProfile as saveProfileToCloud, loadProfile as loadProfileFromCloud } from '@/services/supabase';
 import { UserProfile } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -59,11 +60,27 @@ export default function ProfileScreen() {
 
   const loadProfile = async () => {
     try {
+      // First try to load from cloud for authenticated users
+      if (user) {
+        const cloudProfile = await loadProfileFromCloud();
+        if (cloudProfile) {
+          setSelectedDiet(cloudProfile.diet);
+          setSelectedAllergens(cloudProfile.allergies);
+          // Also update local storage to keep in sync
+          await saveProfile(cloudProfile);
+          return;
+        }
+      }
+      // Fall back to local storage
       const profile = await getProfile();
       setSelectedDiet(profile.diet);
       setSelectedAllergens(profile.allergies);
     } catch (error) {
       console.error('Error loading profile:', error);
+      // Fall back to local storage on error
+      const profile = await getProfile();
+      setSelectedDiet(profile.diet);
+      setSelectedAllergens(profile.allergies);
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +88,12 @@ export default function ProfileScreen() {
 
   const persistProfile = async (diet: 'halal' | 'kosher' | null, allergies: string[]) => {
     try {
+      // Save to local storage first
       await saveProfile({ diet, allergies });
+      // Also save to cloud (non-blocking for authenticated users)
+      saveProfileToCloud({ diet, allergies }).catch((error) => {
+        console.log('[Cloud Sync] Profile sync skipped or failed:', error?.message || 'Not authenticated');
+      });
     } catch (error) {
       console.error('Error saving profile:', error);
     }

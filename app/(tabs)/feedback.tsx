@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as MailComposer from 'expo-mail-composer';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
+import { submitFeedback as submitFeedbackToCloud } from '@/services/supabase';
 
 const FEEDBACK_EMAIL = 'muhammad.syakir.mzack@gmail.com';
 const MAX_IMAGES = 3;
@@ -83,8 +84,17 @@ Device Time: ${new Date().toLocaleString()}
       });
 
       if (result.status === MailComposer.MailComposerStatus.SENT) {
+        // Also save to Supabase for analytics (non-blocking)
+        submitFeedbackToCloud({
+          category: selectedType,
+          message: message,
+          images: images,
+        }).catch((error) => {
+          console.log('[Feedback] Cloud save skipped or failed:', error?.message);
+        });
+
         Alert.alert(
-          'Thank You! 🎉',
+          'Thank You!',
           'Your feedback has been sent successfully. We appreciate your input!',
           [{ text: 'OK' }]
         );

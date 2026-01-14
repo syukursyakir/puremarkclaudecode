@@ -22,6 +22,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
 import { scanIngredients, ScanResponse } from '@/services/api';
 import { getProfile, addScanToHistory } from '@/services/storage';
+import { saveScanToHistory as saveToCloud } from '@/services/supabase';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_CONTAINER_HEIGHT = 400;
@@ -340,13 +341,25 @@ export default function CropImageScreen() {
         return;
       }
 
-      // Save to history and get the history item
+      // Save to local history and get the history item
       const historyItem = await addScanToHistory(response, profile.diet);
+
+      // Also save to cloud for authenticated users (non-blocking)
+      saveToCloud({
+        product_name: historyItem.productName,
+        detected_language: response.detected_language,
+        ingredients: response.ingredients || [],
+        analysis: response.analysis || [],
+        diet_verdict: response.diet_verdict,
+        allergens: response.allergens || [],
+      }).catch((error) => {
+        console.log('[Cloud Sync] Skipped or failed:', error?.message || 'Not authenticated');
+      });
 
       // Navigate to results screen with the scan data
       router.replace({
         pathname: '/scan-results',
-        params: { 
+        params: {
           scanId: historyItem.id,
         },
       });
