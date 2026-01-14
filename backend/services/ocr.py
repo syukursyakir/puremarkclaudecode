@@ -34,7 +34,7 @@ async def extract_text_with_claude_vision(image_base64: str, api_key: str) -> st
     client = anthropic.Anthropic(api_key=api_key)
 
     message = client.messages.create(
-        model="claude-3-5-haiku-20241022",
+        model="claude-3-5-sonnet-20241022",
         max_tokens=2000,
         messages=[
             {
