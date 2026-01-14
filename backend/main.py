@@ -142,7 +142,7 @@ async def scan_ingredients(request: ScanRequest):
         # ============================================================
         # STEP 1: OCR - Extract raw text from image
         # ============================================================
-        print("[OCR] Starting Claude 3.5 Sonnet extraction...")
+        print("[OCR] Starting Claude Haiku 4.5 extraction...")
 
         try:
             raw_ocr_text = await extract_text_with_gpt_vision(image_data, anthropic_api_key)
