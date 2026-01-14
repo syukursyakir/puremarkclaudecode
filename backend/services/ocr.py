@@ -1,6 +1,6 @@
 # ================================================================
 # PureMark Backend - OCR Service
-# GPT-4o Vision for text extraction and parsing
+# Claude 3.5 Haiku for text extraction, GPT-4o-mini for parsing
 # ================================================================
 
 import httpx
@@ -8,62 +8,75 @@ import json
 from typing import Dict, Any
 
 
-async def extract_text_with_gpt_vision(image_base64: str, api_key: str) -> str:
+async def extract_text_with_claude_vision(image_base64: str, api_key: str) -> str:
     """
-    Extract text from image using GPT-4o Vision.
+    Extract text from image using Claude 3.5 Haiku.
 
     Args:
         image_base64: Base64 encoded image
-        api_key: OpenAI API key
+        api_key: Anthropic API key
 
     Returns:
         Extracted text from the image
     """
 
     headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+        "x-api-key": api_key,
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01"
     }
 
+    # Detect image type from base64 header
+    media_type = "image/jpeg"  # default
+    if image_base64.startswith("/9j/"):
+        media_type = "image/jpeg"
+    elif image_base64.startswith("iVBOR"):
+        media_type = "image/png"
+    elif image_base64.startswith("UklGR"):
+        media_type = "image/webp"
+
     payload = {
-        "model": "gpt-4o",
+        "model": "claude-3-5-haiku-20241022",
+        "max_tokens": 2000,
         "messages": [
-            {
-                "role": "system",
-                "content": """You are an OCR specialist. Extract ALL text from the food label image exactly as written.
-Focus on the ingredients list section. Preserve the original language and formatting.
-Return ONLY the raw text, no commentary or formatting."""
-            },
             {
                 "role": "user",
                 "content": [
                     {
-                        "type": "text",
-                        "text": "Extract all text from this food label image, especially the ingredients list:"
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": media_type,
+                            "data": image_base64
+                        }
                     },
                     {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_base64}",
-                            "detail": "high"
-                        }
+                        "type": "text",
+                        "text": """You are an OCR specialist. Extract ALL text from this food label image exactly as written.
+Focus on the ingredients list section. Preserve the original language and formatting.
+Return ONLY the raw text, no commentary or formatting."""
                     }
                 ]
             }
-        ],
-        "max_tokens": 2000
+        ]
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
-            "https://api.openai.com/v1/chat/completions",
+            "https://api.anthropic.com/v1/messages",
             headers=headers,
             json=payload
         )
         response.raise_for_status()
 
         data = response.json()
-        return data["choices"][0]["message"]["content"]
+        return data["content"][0]["text"]
+
+
+# Keep the old function name as alias for compatibility
+async def extract_text_with_gpt_vision(image_base64: str, api_key: str) -> str:
+    """Alias - now uses Claude 3.5 Haiku instead of GPT-4o Vision."""
+    return await extract_text_with_claude_vision(image_base64, api_key)
 
 
 async def parse_ingredient_text(

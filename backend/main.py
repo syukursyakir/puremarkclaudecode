@@ -108,8 +108,12 @@ async def scan_ingredients(request: ScanRequest):
 
     # Get API keys
     openai_api_key = os.getenv("OPENAI_API_KEY")
+    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+
+    if not anthropic_api_key:
+        raise HTTPException(status_code=500, detail="Anthropic API key not configured (required for OCR)")
     if not openai_api_key:
-        raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+        raise HTTPException(status_code=500, detail="OpenAI API key not configured (required for parsing)")
 
     try:
         # Get image data
@@ -138,12 +142,12 @@ async def scan_ingredients(request: ScanRequest):
         # ============================================================
         # STEP 1: OCR - Extract raw text from image
         # ============================================================
-        print("[OCR] Starting GPT Vision extraction...")
+        print("[OCR] Starting Claude 3.5 Haiku extraction...")
 
         try:
-            raw_ocr_text = await extract_text_with_gpt_vision(image_data, openai_api_key)
+            raw_ocr_text = await extract_text_with_gpt_vision(image_data, anthropic_api_key)
         except Exception as e:
-            print(f"[OCR] GPT Vision error: {e}")
+            print(f"[OCR] Claude Vision error: {e}")
             return ScanResponse(
                 success=False,
                 error="Could not extract text from image. Please take a clearer photo.",
