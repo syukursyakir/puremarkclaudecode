@@ -9,10 +9,38 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const SUPABASE_URL = 'https://xnzgmgjuxisclvjvnppy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhuemdtZ2p1eGlzY2x2anZucHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDM1MzcsImV4cCI6MjA4MzQ3OTUzN30.1NKWb6mjmbEVKsUhTfbHBE6LHlrf0-cDD9fz_n4J7YA';
 
-// Create Supabase client with AsyncStorage for session persistence
+// Safe storage adapter that works in all environments (including SSR/bundling)
+const SafeAsyncStorage = {
+  getItem: async (key: string): Promise<string | null> => {
+    try {
+      if (typeof window === 'undefined') return null;
+      return await AsyncStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    try {
+      if (typeof window === 'undefined') return;
+      await AsyncStorage.setItem(key, value);
+    } catch {
+      // Silently fail in non-browser environments
+    }
+  },
+  removeItem: async (key: string): Promise<void> => {
+    try {
+      if (typeof window === 'undefined') return;
+      await AsyncStorage.removeItem(key);
+    } catch {
+      // Silently fail in non-browser environments
+    }
+  },
+};
+
+// Create Supabase client with safe storage for session persistence
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: AsyncStorage,
+    storage: SafeAsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
