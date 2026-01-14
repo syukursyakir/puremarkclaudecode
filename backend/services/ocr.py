@@ -1,9 +1,9 @@
 # ================================================================
 # PureMark Backend - OCR Service
-# Claude 3.5 Haiku for text extraction, GPT-4o-mini for parsing
+# Claude 3.5 Haiku via OpenRouter for text extraction
+# GPT-4o-mini for parsing
 # ================================================================
 
-import anthropic
 import httpx
 import json
 from typing import Dict, Any
@@ -11,11 +11,11 @@ from typing import Dict, Any
 
 async def extract_text_with_claude_vision(image_base64: str, api_key: str) -> str:
     """
-    Extract text from image using Claude 3.5 Haiku.
+    Extract text from image using Claude 3.5 Haiku via OpenRouter.
 
     Args:
         image_base64: Base64 encoded image
-        api_key: Anthropic API key
+        api_key: OpenRouter API key
 
     Returns:
         Extracted text from the image
@@ -30,22 +30,24 @@ async def extract_text_with_claude_vision(image_base64: str, api_key: str) -> st
     elif image_base64.startswith("UklGR"):
         media_type = "image/webp"
 
-    # Use official Anthropic SDK
-    client = anthropic.Anthropic(api_key=api_key)
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://puremark.app",
+        "X-Title": "PureMark"
+    }
 
-    message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=2000,
-        messages=[
+    payload = {
+        "model": "anthropic/claude-3.5-haiku",
+        "max_tokens": 2000,
+        "messages": [
             {
                 "role": "user",
                 "content": [
                     {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": media_type,
-                            "data": image_base64
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{media_type};base64,{image_base64}"
                         }
                     },
                     {
@@ -57,14 +59,23 @@ Return ONLY the raw text, no commentary or formatting."""
                 ]
             }
         ]
-    )
+    }
 
-    return message.content[0].text
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
 
 
 # Keep the old function name as alias for compatibility
 async def extract_text_with_gpt_vision(image_base64: str, api_key: str) -> str:
-    """Alias - now uses Claude 3.5 Haiku instead of GPT-4o Vision."""
+    """Alias - now uses Claude 3.5 Haiku via OpenRouter."""
     return await extract_text_with_claude_vision(image_base64, api_key)
 
 
