@@ -23,8 +23,7 @@ export const BACKEND_TYPE: BackendType = 'railway';
 
 // Backend URLs
 const BACKEND_URLS = {
-  // TODO: Replace with your actual Railway URL after deployment
-  railway: 'https://puremark-backend-production.up.railway.app',
+  railway: 'https://puremarkclaudecode-production.up.railway.app',
   supabase: 'https://xnzgmgjuxisclvjvnppy.supabase.co/functions/v1',
   local: __DEV__ ? 'http://10.0.2.2:8000' : 'http://localhost:8000',
 };
