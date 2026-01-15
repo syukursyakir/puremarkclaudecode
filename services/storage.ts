@@ -202,6 +202,19 @@ export async function clearHistory(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.SCAN_HISTORY);
 }
 
+/**
+ * Clear all app data (profile, history, onboarding)
+ * Used for "Reset All Data" feature
+ */
+export async function clearAllData(): Promise<void> {
+  const ONBOARDING_KEY = 'puremark_onboarding_complete';
+  await AsyncStorage.multiRemove([
+    KEYS.USER_PROFILE,
+    KEYS.SCAN_HISTORY,
+    ONBOARDING_KEY,
+  ]);
+}
+
 // ================================================================
 //  Helper Functions
 // ================================================================

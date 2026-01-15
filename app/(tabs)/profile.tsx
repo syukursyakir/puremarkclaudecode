@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
-import { getProfile, saveProfile } from '@/services/storage';
+import { getProfile, saveProfile, clearAllData } from '@/services/storage';
 import { saveProfile as saveProfileToCloud, loadProfile as loadProfileFromCloud } from '@/services/supabase';
 import { UserProfile } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -337,6 +337,44 @@ export default function ProfileScreen() {
           <Text style={styles.versionLabel}>Version</Text>
           <Text style={styles.versionValue}>1.0.0</Text>
         </View>
+
+        {/* Reset Data */}
+        <View style={[styles.card, { marginTop: Spacing.md }]}>
+          <TouchableOpacity
+            style={styles.resetButton}
+            onPress={() => {
+              Alert.alert(
+                'Reset All Data',
+                'This will clear all your preferences, scan history, and reset the app to its initial state. You will need to complete onboarding again.\n\nThis action cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Reset Everything',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        await clearAllData();
+                        if (user) {
+                          await signOut();
+                        }
+                        router.replace('/onboarding');
+                      } catch (error) {
+                        console.error('Error resetting data:', error);
+                        Alert.alert('Error', 'Failed to reset data. Please try again.');
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+          >
+            <Ionicons name="trash-outline" size={20} color="#D32F2F" />
+            <Text style={styles.resetButtonText}>Reset All Data</Text>
+          </TouchableOpacity>
+          <Text style={styles.resetNote}>
+            Clears preferences, history, and returns to onboarding
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -561,5 +599,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.white,
+  },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+  },
+  resetButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#D32F2F',
+  },
+  resetNote: {
+    fontSize: 12,
+    color: Colors.gray400,
+    marginTop: Spacing.xs,
   },
 });
