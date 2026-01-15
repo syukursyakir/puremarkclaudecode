@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,26 +8,59 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
+import { getProfile, getScanHistory } from '@/services/storage';
+
+type DietType = 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian';
+
+const dietLabels: Record<DietType, { label: string; emoji: string }> = {
+  halal: { label: 'Halal', emoji: '🌙' },
+  kosher: { label: 'Kosher', emoji: '✡️' },
+  vegan: { label: 'Vegan', emoji: '🌱' },
+  vegetarian: { label: 'Vegetarian', emoji: '🥗' },
+  pescetarian: { label: 'Pescetarian', emoji: '🐟' },
+};
 
 export default function ScanScreen() {
+  const [userDiet, setUserDiet] = useState<DietType | null>(null);
+  const [totalScans, setTotalScans] = useState(0);
+  const [allergenCount, setAllergenCount] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
+
+  const loadUserData = async () => {
+    try {
+      const [profile, history] = await Promise.all([
+        getProfile(),
+        getScanHistory(),
+      ]);
+      setUserDiet(profile.diet as DietType | null);
+      setAllergenCount(profile.allergies?.length || 0);
+      setTotalScans(history.length);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
+
   const handleScanWithCamera = async () => {
-    // Request camera permissions
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert(
         'Permission Required',
-        'Camera permission is required to scan ingredients. Please enable it in your device settings.',
+        'Camera permission is required to scan ingredients.',
         [{ text: 'OK' }]
       );
       return;
     }
 
-    // Launch camera (no editing - we'll crop in our custom screen)
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
@@ -36,7 +69,6 @@ export default function ScanScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      // Navigate to crop screen
       router.push({
         pathname: '/crop-image',
         params: { imageUri: result.assets[0].uri },
@@ -45,19 +77,17 @@ export default function ScanScreen() {
   };
 
   const handleUploadImage = async () => {
-    // Request media library permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert(
         'Permission Required',
-        'Gallery permission is required to upload images. Please enable it in your device settings.',
+        'Gallery permission is required to upload images.',
         [{ text: 'OK' }]
       );
       return;
     }
 
-    // Launch image picker (no editing - we'll crop in our custom screen)
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
@@ -65,7 +95,6 @@ export default function ScanScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      // Navigate to crop screen
       router.push({
         pathname: '/crop-image',
         params: { imageUri: result.assets[0].uri },
@@ -75,32 +104,51 @@ export default function ScanScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header - CalAI Style */}
         <View style={styles.header}>
-          <View style={styles.brandRow}>
-            <View style={styles.logoMini}>
-              <Text style={styles.logoMiniText}>Pm</Text>
-            </View>
-            <Text style={styles.brandName}>PureMark</Text>
+          <View style={styles.logoMini}>
+            <Text style={styles.logoMiniText}>Pm</Text>
           </View>
-          <Text style={styles.headerTagline}>AI-powered ingredient scanner</Text>
+          <Text style={styles.brandName}>PureMark</Text>
         </View>
 
-        {/* Ready to Scan Card */}
-        <View style={styles.readyCard}>
-          <View style={styles.cameraIconContainer}>
-            <Ionicons name="camera-outline" size={32} color={Colors.gray600} />
+        {/* Primary Status Card - Like CalAI's calorie display */}
+        <View style={styles.statusCard}>
+          {userDiet ? (
+            <>
+              <Text style={styles.statusEmoji}>{dietLabels[userDiet].emoji}</Text>
+              <Text style={styles.statusLabel}>Scanning for</Text>
+              <Text style={styles.statusValue}>{dietLabels[userDiet].label}</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.statusEmoji}>🍽️</Text>
+              <Text style={styles.statusLabel}>Scanning</Text>
+              <Text style={styles.statusValue}>All Ingredients</Text>
+            </>
+          )}
+
+          {/* Secondary Stats Row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{totalScans}</Text>
+              <Text style={styles.statLabel}>Scans</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{allergenCount}</Text>
+              <Text style={styles.statLabel}>Allergens tracked</Text>
+            </View>
           </View>
-          <Text style={styles.readyTitle}>Ready to Scan</Text>
-          <Text style={styles.readySubtitle}>
-            Select an input method to begin certification analysis
-          </Text>
         </View>
+
+        {/* Scan Actions */}
+        <Text style={styles.sectionLabel}>SCAN INGREDIENTS</Text>
 
         {/* Scan with Camera Button */}
         <Pressable
@@ -112,13 +160,13 @@ export default function ScanScreen() {
           onPress={handleScanWithCamera}
         >
           <View style={styles.actionIconContainer}>
-            <Ionicons name="camera" size={20} color={Colors.white} />
+            <Ionicons name="camera" size={22} color={Colors.white} />
           </View>
           <View style={styles.actionContent}>
-            <Text style={[styles.actionTitle, styles.cameraButtonTitle]}>Scan with Camera</Text>
-            <Text style={[styles.actionSubtitle, styles.cameraButtonSubtitle]}>Take a photo to analyze</Text>
+            <Text style={styles.cameraButtonTitle}>Scan with Camera</Text>
+            <Text style={styles.cameraButtonSubtitle}>Take a photo of ingredients</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
         </Pressable>
 
         {/* Upload Image Button */}
@@ -131,41 +179,21 @@ export default function ScanScreen() {
           onPress={handleUploadImage}
         >
           <View style={styles.uploadIconContainer}>
-            <Ionicons name="image-outline" size={20} color={Colors.gray600} />
+            <Ionicons name="image-outline" size={22} color={Colors.gray600} />
           </View>
           <View style={styles.actionContent}>
-            <Text style={[styles.actionTitle, styles.uploadButtonTitle]}>Upload Image</Text>
-            <Text style={[styles.actionSubtitle, styles.uploadButtonSubtitle]}>Choose from gallery</Text>
+            <Text style={styles.uploadButtonTitle}>Upload Image</Text>
+            <Text style={styles.uploadButtonSubtitle}>Choose from gallery</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
         </Pressable>
 
-        {/* Tips Section */}
-        <View style={styles.tipsCard}>
-          <View style={styles.tipsHeader}>
-            <Text style={styles.tipsIcon}>💡</Text>
-            <Text style={styles.tipsTitle}>Tips for Best Results</Text>
-          </View>
-          <View style={styles.tipsList}>
-            <View style={styles.tipRow}>
-              <View style={styles.tipDot} />
-              <Text style={styles.tipText}>
-                Ensure the ingredient list is clearly visible and in focus
-              </Text>
-            </View>
-            <View style={styles.tipRow}>
-              <View style={styles.tipDot} />
-              <Text style={styles.tipText}>
-                Use good lighting to avoid shadows on the label
-              </Text>
-            </View>
-            <View style={styles.tipRow}>
-              <View style={styles.tipDot} />
-              <Text style={styles.tipText}>
-                Capture the entire ingredient section for accurate analysis
-              </Text>
-            </View>
-          </View>
+        {/* Quick Tip */}
+        <View style={styles.tipCard}>
+          <Ionicons name="bulb-outline" size={18} color={Colors.gray500} />
+          <Text style={styles.tipText}>
+            For best results, ensure the ingredient list is clearly visible and well-lit
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -184,18 +212,17 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     paddingBottom: Spacing.xxxl,
   },
+
+  // Header
   header: {
-    marginBottom: Spacing.xl,
-    alignItems: 'center',
-  },
-  brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.xs,
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
   },
   logoMini: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     backgroundColor: Colors.gray800,
     borderRadius: BorderRadius.md,
     justifyContent: 'center',
@@ -203,79 +230,110 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   logoMiniText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '300',
     color: Colors.white,
     letterSpacing: -1,
   },
   brandName: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: Colors.black,
     letterSpacing: -0.5,
   },
-  headerTagline: {
-    fontSize: 14,
-    color: Colors.gray500,
-  },
-  readyCard: {
-    backgroundColor: '#E8F5E8',
-    borderRadius: BorderRadius.xl,
+
+  // Status Card (CalAI style primary metric)
+  statusCard: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.xxl,
     padding: Spacing.xl,
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
-  cameraIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
+  statusEmoji: {
+    fontSize: 40,
+    marginBottom: Spacing.sm,
   },
-  readyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.black,
+  statusLabel: {
+    fontSize: 14,
+    color: Colors.gray500,
     marginBottom: Spacing.xs,
   },
-  readySubtitle: {
-    ...Typography.bodySmall,
-    color: Colors.gray600,
-    textAlign: 'center',
+  statusValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.black,
+    marginBottom: Spacing.lg,
   },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray200,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  statItem: {
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.black,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: Colors.gray500,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: Colors.gray200,
+  },
+
+  // Section
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.gray500,
+    letterSpacing: 0.5,
+    marginBottom: Spacing.sm,
+  },
+
+  // Action Buttons
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     marginBottom: Spacing.sm,
   },
   cameraButton: {
-    backgroundColor: Colors.gray800,
+    backgroundColor: Colors.black,
   },
   uploadButton: {
     backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.gray200,
   },
   buttonPressed: {
-    opacity: 0.8,
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
   },
   actionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.lg,
     backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
   },
   uploadIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.lg,
     backgroundColor: Colors.gray100,
     justifyContent: 'center',
     alignItems: 'center',
@@ -284,65 +342,41 @@ const styles = StyleSheet.create({
   actionContent: {
     flex: 1,
   },
-  actionTitle: {
+  cameraButtonTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: Colors.white,
     marginBottom: 2,
   },
-  actionSubtitle: {
-    fontSize: 13,
-  },
-  cameraButtonTitle: {
-    color: Colors.white,
-  },
   cameraButtonSubtitle: {
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
   },
   uploadButtonTitle: {
-    color: Colors.black,
-  },
-  uploadButtonSubtitle: {
-    color: Colors.gray500,
-  },
-  tipsCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    marginTop: Spacing.md,
-  },
-  tipsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  tipsIcon: {
-    fontSize: 16,
-    marginRight: Spacing.sm,
-  },
-  tipsTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.black,
+    marginBottom: 2,
   },
-  tipsList: {
+  uploadButtonSubtitle: {
+    fontSize: 13,
+    color: Colors.gray500,
+  },
+
+  // Tip
+  tipCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
     gap: Spacing.sm,
   },
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  tipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.gray400,
-    marginTop: 7,
-    marginRight: Spacing.sm,
-  },
   tipText: {
-    ...Typography.bodySmall,
-    color: Colors.gray600,
     flex: 1,
-    lineHeight: 20,
+    fontSize: 13,
+    color: Colors.gray500,
+    lineHeight: 18,
   },
 });
