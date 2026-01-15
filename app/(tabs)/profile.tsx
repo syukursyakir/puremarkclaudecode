@@ -426,7 +426,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: Colors.black,
-    fontStyle: 'italic',
     marginBottom: Spacing.xs,
   },
   headerSubtitle: {
