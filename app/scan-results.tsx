@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
-import { getScanById, ScanHistoryItem, ComplianceStatus } from '@/services/storage';
+import { getScanById, ScanHistoryItem, ComplianceStatus, getProfile } from '@/services/storage';
 
 // Status configuration for UI display
 const statusConfig = {
@@ -83,6 +83,7 @@ export default function ScanResultsScreen() {
   const [item, setItem] = useState<ScanHistoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedIngredient, setExpandedIngredient] = useState<string | null>(null);
+  const [userAllergies, setUserAllergies] = useState<string[]>([]);
 
   useEffect(() => {
     loadScanData();
@@ -93,15 +94,27 @@ export default function ScanResultsScreen() {
       setLoading(false);
       return;
     }
-    
+
     try {
-      const data = await getScanById(scanId);
+      const [data, profile] = await Promise.all([
+        getScanById(scanId),
+        getProfile()
+      ]);
       setItem(data);
+      setUserAllergies(profile.allergies.map(a => a.toLowerCase()));
     } catch (error) {
       console.error('Error loading scan:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check if an allergen matches the user's profile
+  const isUserAllergen = (allergen: string): boolean => {
+    const allergenLower = allergen.toLowerCase();
+    return userAllergies.some(userAllergen =>
+      allergenLower.includes(userAllergen) || userAllergen.includes(allergenLower)
+    );
   };
 
   const handleBack = () => {
@@ -217,15 +230,39 @@ export default function ScanResultsScreen() {
           <View style={styles.allergenCard}>
             <View style={styles.allergenHeader}>
               <Ionicons name="warning-outline" size={20} color="#C4A574" />
-              <Text style={styles.allergenTitle}>Allergen Alert</Text>
+              <Text style={styles.allergenTitle}>Detected Allergens</Text>
             </View>
-            <View style={styles.allergenList}>
-              {item.allergens.map((allergen, index) => (
-                <View key={index} style={styles.allergenPill}>
-                  <Text style={styles.allergenPillText}>{allergen}</Text>
+
+            {/* User's allergens found - DANGER */}
+            {item.allergens.filter(isUserAllergen).length > 0 && (
+              <View style={styles.userAllergenSection}>
+                <View style={styles.dangerHeader}>
+                  <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+                  <Text style={styles.dangerHeaderText}>Your Allergens Detected!</Text>
                 </View>
-              ))}
-            </View>
+                <View style={styles.allergenList}>
+                  {item.allergens.filter(isUserAllergen).map((allergen, index) => (
+                    <View key={index} style={styles.allergenPillDanger}>
+                      <Text style={styles.allergenPillText}>{allergen}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Other allergens found - INFO */}
+            {item.allergens.filter(a => !isUserAllergen(a)).length > 0 && (
+              <View style={styles.otherAllergenSection}>
+                <Text style={styles.otherAllergenLabel}>Other allergens in product:</Text>
+                <View style={styles.allergenList}>
+                  {item.allergens.filter(a => !isUserAllergen(a)).map((allergen, index) => (
+                    <View key={index} style={styles.allergenPill}>
+                      <Text style={styles.allergenPillText}>{allergen}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         )}
 
@@ -441,10 +478,38 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.sm,
   },
+  userAllergenSection: {
+    marginBottom: Spacing.md,
+  },
+  dangerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  dangerHeaderText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#D32F2F',
+  },
+  otherAllergenSection: {
+    marginTop: Spacing.sm,
+  },
+  otherAllergenLabel: {
+    fontSize: 12,
+    color: '#8B6914',
+    marginBottom: Spacing.xs,
+  },
   allergenPill: {
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.sm,
     backgroundColor: '#C4A574',
+    borderRadius: BorderRadius.full,
+  },
+  allergenPillDanger: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    backgroundColor: '#D32F2F',
     borderRadius: BorderRadius.full,
   },
   allergenPillText: {
