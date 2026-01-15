@@ -1,6 +1,9 @@
 // Dynamic Expo configuration
 // This allows environment variables to be injected at build time
 
+// Load .env file
+require('dotenv').config();
+
 export default ({ config }) => {
   return {
     ...config,
