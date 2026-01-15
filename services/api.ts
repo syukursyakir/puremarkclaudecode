@@ -43,7 +43,7 @@ export interface IngredientAnalysis {
     evidence: string[];
     tags: string[];
   };
-  allergy_flag: boolean;
+  allergy_flag: string | null;
 }
 
 export interface DietVerdict {
