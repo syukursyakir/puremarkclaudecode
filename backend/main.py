@@ -164,8 +164,8 @@ async def health_check():
 @app.post("/scan", response_model=ScanResponse)
 @limiter.limit("30/minute")  # 30 scans per minute per IP
 async def scan_ingredients(
-    request: ScanRequest,
-    req: Request,  # Required for rate limiter
+    request: Request,  # Required for rate limiter (must be named 'request')
+    body: ScanRequest,
     authenticated: bool = Depends(verify_api_key)
 ):
     """
@@ -191,8 +191,8 @@ async def scan_ingredients(
 
     try:
         # Get image data
-        image_data = request.image
-        profile = request.profile or UserProfile()
+        image_data = body.image
+        profile = body.profile or UserProfile()
 
         if not image_data:
             return ScanResponse(success=False, error="No image provided")
@@ -563,13 +563,13 @@ class FeedbackRequest(BaseModel):
 @app.post("/feedback")
 @limiter.limit("5/hour")  # 5 feedback submissions per hour per IP
 async def submit_feedback(
-    request: FeedbackRequest,
-    req: Request,  # Required for rate limiter
+    request: Request,  # Required for rate limiter (must be named 'request')
+    body: FeedbackRequest,
     authenticated: bool = Depends(verify_api_key)
 ):
     """Submit user feedback."""
     # TODO: Store in Supabase
-    print(f"[FEEDBACK] {request.category}: {request.message}")
+    print(f"[FEEDBACK] {body.category}: {body.message}")
     return {"success": True, "message": "Feedback received"}
 
 # ================================================================
