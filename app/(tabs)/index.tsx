@@ -160,12 +160,32 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
 
-        {/* Info Card */}
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle-outline" size={20} color={Colors.gray500} />
-          <Text style={styles.infoText}>
-            Scan ingredient lists to check compliance with your dietary preferences
-          </Text>
+        {/* Food Transparency Tips */}
+        <View style={styles.tipsCard}>
+          <View style={styles.tipsHeader}>
+            <Ionicons name="shield-checkmark-outline" size={18} color={Colors.gray600} />
+            <Text style={styles.tipsTitle}>Food Transparency Tips</Text>
+          </View>
+          <View style={styles.tipsList}>
+            <View style={styles.tipRow}>
+              <View style={styles.tipDot} />
+              <Text style={styles.tipText}>
+                Check ingredient lists for additives that may not meet certification standards
+              </Text>
+            </View>
+            <View style={styles.tipRow}>
+              <View style={styles.tipDot} />
+              <Text style={styles.tipText}>
+                Verify certification logos with their official issuing bodies when possible
+              </Text>
+            </View>
+            <View style={styles.tipRow}>
+              <View style={styles.tipDot} />
+              <Text style={styles.tipText}>
+                E-numbers and natural flavors may require additional verification for compliance
+              </Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -353,19 +373,42 @@ const styles = StyleSheet.create({
     color: Colors.gray500,
   },
 
-  // Info Card
-  infoCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // Tips Card
+  tipsCard: {
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.xl,
-    padding: Spacing.md,
+    padding: Spacing.lg,
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
     gap: Spacing.sm,
   },
-  infoText: {
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.black,
+  },
+  tipsList: {
+    gap: Spacing.md,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  tipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.gray400,
+    marginTop: 7,
+    marginRight: Spacing.sm,
+  },
+  tipText: {
+    ...Typography.bodySmall,
+    color: Colors.gray600,
     flex: 1,
-    fontSize: 13,
-    color: Colors.gray500,
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });
