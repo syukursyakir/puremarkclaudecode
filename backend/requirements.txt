@@ -8,7 +8,7 @@ python-multipart>=0.0.9
 
 # AI APIs
 openai>=1.12.0
-# OpenRouter accessed via httpx (no SDK needed)
+google-generativeai>=0.8.0
 
 # HTTP client
 httpx>=0.26.0
