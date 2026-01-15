@@ -85,7 +85,7 @@ async def health_check():
     return {
         "status": "healthy",
         "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
-        "google_configured": bool(os.getenv("GOOGLE_API_KEY")),
+        "openrouter_configured": bool(os.getenv("OPENROUTER_API_KEY")),
     }
 
 # ================================================================
@@ -108,10 +108,10 @@ async def scan_ingredients(request: ScanRequest):
 
     # Get API keys
     openai_api_key = os.getenv("OPENAI_API_KEY")
-    google_api_key = os.getenv("GOOGLE_API_KEY")
+    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 
-    if not google_api_key:
-        raise HTTPException(status_code=500, detail="Google API key not configured (required for OCR)")
+    if not openrouter_api_key:
+        raise HTTPException(status_code=500, detail="OpenRouter API key not configured (required for OCR)")
     if not openai_api_key:
         raise HTTPException(status_code=500, detail="OpenAI API key not configured (required for parsing)")
 
@@ -142,12 +142,12 @@ async def scan_ingredients(request: ScanRequest):
         # ============================================================
         # STEP 1: OCR - Extract raw text from image
         # ============================================================
-        print("[OCR] Starting Gemini 2.0 Flash extraction...")
+        print("[OCR] Starting Gemini 2.0 Flash extraction via OpenRouter...")
 
         try:
-            raw_ocr_text = await extract_text_with_gpt_vision(image_data, google_api_key)
+            raw_ocr_text = await extract_text_with_gpt_vision(image_data, openrouter_api_key)
         except Exception as e:
-            print(f"[OCR] Gemini error: {e}")
+            print(f"[OCR] OpenRouter/Gemini error: {e}")
             return ScanResponse(
                 success=False,
                 error="Could not extract text from image. Please take a clearer photo.",
