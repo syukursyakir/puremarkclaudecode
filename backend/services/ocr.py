@@ -53,9 +53,19 @@ async def extract_text_with_gemini(image_base64: str, api_key: str) -> str:
                     },
                     {
                         "type": "text",
-                        "text": """You are an OCR specialist. Extract ALL text from this food label image exactly as written.
-Focus on the ingredients list section. Preserve the original language and formatting.
-Return ONLY the raw text, no commentary or formatting."""
+                        "text": """You are an OCR specialist extracting text from food product packaging.
+
+IMPORTANT: Extract ALL visible text from this image. Be GENEROUS - include MORE text rather than less.
+The user may have captured a wide area, so extract everything you see including:
+- Ingredients lists (in ANY language)
+- Product names
+- Nutritional information
+- Any other text visible
+
+It is CRITICAL that you do not miss any ingredients. The parsing step will filter out irrelevant text.
+If you see text that might be ingredients, INCLUDE IT even if you're unsure.
+
+Preserve the original language exactly as written. Return ONLY the raw extracted text, no commentary."""
                     }
                 ]
             }

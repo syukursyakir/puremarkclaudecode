@@ -913,6 +913,7 @@ const styles = StyleSheet.create({
   },
   modalIconContainer: {
     marginBottom: Spacing.md,
+    alignItems: 'center',
   },
   modalIconCircle: {
     width: 64,

@@ -227,7 +227,28 @@ function determineComplianceStatus(
     if (status === 'NOT_KOSHER') return 'not_compliant';
     return 'conditionally'; // REQUIRES_KOSHER_CERTIFICATION
   }
-  
+
+  if (diet === 'vegan' && scanResponse.diet_verdict.vegan) {
+    const status = scanResponse.diet_verdict.vegan.status;
+    if (status === 'COMPLIANT') return 'compliant';
+    if (status === 'NOT_COMPLIANT') return 'not_compliant';
+    return 'conditionally'; // UNCERTAIN
+  }
+
+  if (diet === 'vegetarian' && scanResponse.diet_verdict.vegetarian) {
+    const status = scanResponse.diet_verdict.vegetarian.status;
+    if (status === 'COMPLIANT') return 'compliant';
+    if (status === 'NOT_COMPLIANT') return 'not_compliant';
+    return 'conditionally'; // UNCERTAIN
+  }
+
+  if (diet === 'pescetarian' && scanResponse.diet_verdict.pescetarian) {
+    const status = scanResponse.diet_verdict.pescetarian.status;
+    if (status === 'COMPLIANT') return 'compliant';
+    if (status === 'NOT_COMPLIANT') return 'not_compliant';
+    return 'conditionally'; // UNCERTAIN
+  }
+
   return 'conditionally';
 }
 
