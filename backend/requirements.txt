@@ -17,4 +17,10 @@ httpx>=0.26.0
 python-dotenv>=1.0.0
 pydantic>=2.0.0
 
+# Rate limiting
+slowapi>=0.1.9
+
+# Error tracking
+sentry-sdk[fastapi]>=1.40.0
+
 # CORS (included with fastapi/starlette)

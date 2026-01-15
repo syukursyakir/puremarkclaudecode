@@ -3,7 +3,7 @@
 # Railway Deployment - OCR + AI Scoring + Halal/Kosher Engine
 # ================================================================
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -11,8 +11,37 @@ import os
 import base64
 from dotenv import load_dotenv
 
+# Rate limiting
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+# Error tracking
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+
 # Load environment variables
 load_dotenv()
+
+# ================================================================
+# Sentry Error Tracking
+# ================================================================
+sentry_dsn = os.getenv("SENTRY_DSN")
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[FastApiIntegration()],
+        traces_sample_rate=0.1,  # 10% of requests for performance monitoring
+        profiles_sample_rate=0.1,
+    )
+    print("[SENTRY] Error tracking initialized")
+else:
+    print("[SENTRY] No DSN configured, error tracking disabled")
+
+# ================================================================
+# Rate Limiter Setup
+# ================================================================
+limiter = Limiter(key_func=get_remote_address)
 
 # Import services
 from services.ocr import extract_text_with_gpt_vision, parse_ingredient_text
@@ -36,14 +65,46 @@ app = FastAPI(
     version="2.0.0",
 )
 
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # CORS - Allow all origins for mobile app
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,  # Set to False for public API without cookies
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+# ================================================================
+# API Key Authentication
+# ================================================================
+API_SECRET_KEY = os.getenv("API_SECRET_KEY")
+
+async def verify_api_key(x_api_key: Optional[str] = Header(None)):
+    """
+    Verify API key if one is configured.
+    If API_SECRET_KEY is not set, authentication is disabled (development mode).
+    """
+    if not API_SECRET_KEY:
+        # No API key configured - allow all requests (development mode)
+        return True
+
+    if not x_api_key:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing API key. Include X-API-Key header."
+        )
+
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API key"
+        )
+
+    return True
 
 # ================================================================
 # Request/Response Models
@@ -88,8 +149,12 @@ async def root():
 async def health_check():
     return {
         "status": "healthy",
+        "version": "2.0.0",
         "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
         "openrouter_configured": bool(os.getenv("OPENROUTER_API_KEY")),
+        "api_auth_enabled": bool(API_SECRET_KEY),
+        "sentry_enabled": bool(sentry_dsn),
+        "rate_limiting": "enabled",
     }
 
 # ================================================================
@@ -97,7 +162,12 @@ async def health_check():
 # ================================================================
 
 @app.post("/scan", response_model=ScanResponse)
-async def scan_ingredients(request: ScanRequest):
+@limiter.limit("30/minute")  # 30 scans per minute per IP
+async def scan_ingredients(
+    request: ScanRequest,
+    req: Request,  # Required for rate limiter
+    authenticated: bool = Depends(verify_api_key)
+):
     """
     Scan ingredient label image and analyze for Halal/Kosher compliance.
 
@@ -491,7 +561,12 @@ class FeedbackRequest(BaseModel):
     images: Optional[List[str]] = []
 
 @app.post("/feedback")
-async def submit_feedback(request: FeedbackRequest):
+@limiter.limit("5/hour")  # 5 feedback submissions per hour per IP
+async def submit_feedback(
+    request: FeedbackRequest,
+    req: Request,  # Required for rate limiter
+    authenticated: bool = Depends(verify_api_key)
+):
     """Submit user feedback."""
     # TODO: Store in Supabase
     print(f"[FEEDBACK] {request.category}: {request.message}")

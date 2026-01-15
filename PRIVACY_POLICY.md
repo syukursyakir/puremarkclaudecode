@@ -1,6 +1,6 @@
 # Privacy Policy for PureMark
 
-**Last Updated:** January 9, 2026
+**Last Updated:** January 15, 2026
 
 **Effective Date:** January 9, 2026
 
@@ -75,15 +75,21 @@ When you scan an ingredient label:
 
 ### OpenAI API
 
-We use OpenAI's API to help extract and parse ingredient text from images. When processing your scans:
+We use OpenAI's GPT-4o-mini API to parse and analyze ingredient text. When processing your scans:
 
-- Image data is sent to OpenAI for text recognition
+- Extracted text is sent to OpenAI for ingredient analysis
 - OpenAI's privacy policy applies to this processing: https://openai.com/privacy
 - No personal information is shared with OpenAI
 
-### PaddleOCR
+### Google Gemini API (via OpenRouter)
 
-We also use PaddleOCR, an open-source optical character recognition tool, to extract text from images. This processing occurs on our servers.
+We use Google's Gemini 2.0 Flash model via OpenRouter for optical character recognition (OCR) to extract text from ingredient label images. When processing your scans:
+
+- Image data is sent to Google's Gemini API through OpenRouter for text extraction
+- Google's privacy policy applies: https://policies.google.com/privacy
+- OpenRouter's privacy policy applies: https://openrouter.ai/privacy
+- Images are processed in real-time and not permanently stored
+- No personal information is shared with these services
 
 ## 6. Permissions We Request
 
@@ -167,7 +173,7 @@ If you have questions about this Privacy Policy or our practices, please contact
 | Dietary Preferences | Yes | Yes | Yes (latest only) | No |
 | Allergen Selections | Yes | Yes | Yes (latest only) | No |
 | Scan History | Yes | Yes | No | No |
-| Images | Processed | No | No (in-memory only) | Yes (OpenAI for OCR) |
+| Images | Processed | No | No (in-memory only) | Yes (Gemini for OCR, OpenAI for parsing) |
 | Feedback | Yes | No | Yes | No |
 | Personal Info (name, email) | No | No | No | No |
 | Location | No | No | No | No |

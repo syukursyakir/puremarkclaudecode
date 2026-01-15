@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,16 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  TextInput,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
-import { getScanById, ScanHistoryItem, ComplianceStatus, getProfile } from '@/services/storage';
+import { getScanById, ScanHistoryItem, ComplianceStatus, getProfile, renameScan } from '@/services/storage';
+
+const MAX_NAME_LENGTH = 30;
 
 // Status configuration for UI display
 const statusConfig = {
@@ -127,6 +131,11 @@ export default function ScanResultsScreen() {
   const [expandedIngredient, setExpandedIngredient] = useState<string | null>(null);
   const [userAllergies, setUserAllergies] = useState<string[]>([]);
 
+  // Inline rename state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingName, setEditingName] = useState('');
+  const nameInputRef = useRef<TextInput>(null);
+
   useEffect(() => {
     loadScanData();
   }, [scanId]);
@@ -173,6 +182,49 @@ export default function ScanResultsScreen() {
     );
   };
 
+  // Start editing the product name
+  const startEditing = () => {
+    if (item) {
+      setEditingName(item.productName);
+      setIsEditing(true);
+      // Focus the input after state update
+      setTimeout(() => nameInputRef.current?.focus(), 100);
+    }
+  };
+
+  // Save the edited name
+  const saveEdit = async () => {
+    if (!item || !scanId) return;
+
+    const trimmedName = editingName.trim();
+    if (!trimmedName) {
+      // Revert to original if empty
+      setIsEditing(false);
+      setEditingName('');
+      return;
+    }
+
+    const finalName = trimmedName.slice(0, MAX_NAME_LENGTH);
+
+    try {
+      await renameScan(scanId, finalName);
+      setItem({ ...item, productName: finalName });
+    } catch (error) {
+      console.error('Error renaming product:', error);
+    } finally {
+      setIsEditing(false);
+      setEditingName('');
+      Keyboard.dismiss();
+    }
+  };
+
+  // Cancel editing
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditingName('');
+    Keyboard.dismiss();
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -212,7 +264,40 @@ export default function ScanResultsScreen() {
         </Pressable>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Scan Results</Text>
-          <Text style={styles.headerSubtitle}>{item.productName}</Text>
+          <View style={styles.productNameRow}>
+            {isEditing ? (
+              <View style={styles.editingContainer}>
+                <TextInput
+                  ref={nameInputRef}
+                  style={styles.productNameInput}
+                  value={editingName}
+                  onChangeText={(text) => setEditingName(text.slice(0, MAX_NAME_LENGTH))}
+                  onBlur={saveEdit}
+                  onSubmitEditing={saveEdit}
+                  autoFocus
+                  selectTextOnFocus
+                  maxLength={MAX_NAME_LENGTH}
+                  returnKeyType="done"
+                  placeholder="Product name"
+                  placeholderTextColor={Colors.gray400}
+                />
+                <Pressable onPress={cancelEdit} style={styles.cancelEditButton}>
+                  <Ionicons name="close" size={16} color={Colors.gray500} />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                style={styles.productNameTouchable}
+                onPress={startEditing}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.headerSubtitle} numberOfLines={1}>
+                  {item.productName}
+                </Text>
+                <Ionicons name="pencil" size={12} color={Colors.gray400} style={styles.editIcon} />
+              </Pressable>
+            )}
+          </View>
         </View>
         <Pressable onPress={handleDone} style={styles.doneButton}>
           <Text style={styles.doneButtonText}>Done</Text>
@@ -456,6 +541,39 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: Colors.gray500,
+    flexShrink: 1,
+  },
+  productNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  productNameTouchable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  editIcon: {
+    marginLeft: 6,
+  },
+  editingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  productNameInput: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.black,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Colors.gray300,
+  },
+  cancelEditButton: {
+    marginLeft: 8,
+    padding: 4,
   },
   doneButton: {
     paddingVertical: Spacing.xs,

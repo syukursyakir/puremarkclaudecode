@@ -17,6 +17,20 @@ export const API_BASE_URL = API_URL;
 const USE_SUPABASE = BACKEND_TYPE === 'supabase';
 const USE_RAILWAY = BACKEND_TYPE === 'railway' || BACKEND_TYPE === 'local';
 
+// Get common headers for API requests
+const getHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Add API key if configured
+  if (config.apiKey) {
+    headers['X-API-Key'] = config.apiKey;
+  }
+
+  return headers;
+};
+
 // ================================================================
 //  Types
 // ================================================================
@@ -166,9 +180,7 @@ export async function scanIngredients(
     console.log(`[API] Using ${BACKEND_TYPE} backend at ${API_BASE_URL}`);
     const response = await fetch(`${API_BASE_URL}/scan`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         image: imageBase64,
         profile: {
@@ -236,12 +248,14 @@ export async function submitFeedback(feedback: {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/submit_feedback`, {
+    const response = await fetch(`${API_BASE_URL}/feedback`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(feedback),
+      headers: getHeaders(),
+      body: JSON.stringify({
+        category: feedback.category,
+        message: feedback.message,
+        images: feedback.images,
+      }),
     });
 
     return await response.json();

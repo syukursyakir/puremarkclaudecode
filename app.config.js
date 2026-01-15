@@ -10,6 +10,10 @@ export default ({ config }) => {
       // Production: API_URL=https://api.puremark.app
       apiUrl: process.env.API_URL || null,
 
+      // API Key for authenticated requests to backend
+      // Set API_SECRET_KEY in your EAS secrets for production builds
+      apiKey: process.env.API_SECRET_KEY || null,
+
       // Debug mode
       debug: process.env.DEBUG === 'true',
     },

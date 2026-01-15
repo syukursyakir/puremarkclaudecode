@@ -40,12 +40,20 @@ const getApiUrl = (): string => {
   return BACKEND_URLS[BACKEND_TYPE];
 };
 
+// API Key for authentication (optional - only required in production)
+const getApiKey = (): string | undefined => {
+  return extra.apiKey as string | undefined;
+};
+
 export const config = {
   // Backend type
   backendType: BACKEND_TYPE,
 
   // API base URL - automatically selected based on backend type
   apiUrl: getApiUrl(),
+
+  // API key for authentication (set in Railway environment as API_SECRET_KEY)
+  apiKey: getApiKey(),
 
   // Image upload constraints
   image: {
