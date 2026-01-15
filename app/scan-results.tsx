@@ -274,21 +274,37 @@ export default function ScanResultsScreen() {
         {item.ingredients.map((ingredient, index) => {
           const ingConfig = statusConfig[ingredient.status];
           const isExpanded = expandedIngredient === ingredient.name;
-          
+          const hasUserAllergen = ingredient.allergy_flag && isUserAllergen(ingredient.allergy_flag);
+
           // Get evidence text for expansion
-          const evidence = item.diet === 'halal' 
-            ? ingredient.halal?.evidence 
+          const evidence = item.diet === 'halal'
+            ? ingredient.halal?.evidence
             : ingredient.kosher?.evidence;
-          
+
           return (
             <Pressable
               key={`${ingredient.name}-${index}`}
-              style={styles.ingredientItem}
+              style={[
+                styles.ingredientItem,
+                hasUserAllergen && styles.ingredientItemDanger,
+              ]}
               onPress={() => toggleIngredient(ingredient.name)}
             >
               <View style={styles.ingredientMain}>
-                <Text style={styles.ingredientName}>{ingredient.name}</Text>
+                <View style={styles.ingredientNameRow}>
+                  {hasUserAllergen && (
+                    <Ionicons name="alert-circle" size={16} color="#D32F2F" style={styles.allergenIcon} />
+                  )}
+                  <Text style={[styles.ingredientName, hasUserAllergen && styles.ingredientNameDanger]}>
+                    {ingredient.name}
+                  </Text>
+                </View>
                 <View style={styles.ingredientRight}>
+                  {hasUserAllergen && (
+                    <View style={styles.allergenBadge}>
+                      <Text style={styles.allergenBadgeText}>ALLERGEN</Text>
+                    </View>
+                  )}
                   <View
                     style={[
                       styles.ingredientBadge,
@@ -311,7 +327,7 @@ export default function ScanResultsScreen() {
                   />
                 </View>
               </View>
-              
+
               {/* Expanded details */}
               {isExpanded && evidence && evidence.length > 0 && (
                 <View style={styles.ingredientDetails}>
@@ -529,16 +545,45 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginBottom: Spacing.sm,
   },
+  ingredientItemDanger: {
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
   ingredientMain: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  ingredientNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  allergenIcon: {
+    marginRight: 6,
   },
   ingredientName: {
     fontSize: 15,
     fontWeight: '500',
     color: Colors.black,
     flex: 1,
+  },
+  ingredientNameDanger: {
+    color: '#C62828',
+    fontWeight: '600',
+  },
+  allergenBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#D32F2F',
+    borderRadius: BorderRadius.sm,
+    marginRight: 6,
+  },
+  allergenBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.white,
   },
   ingredientRight: {
     flexDirection: 'row',

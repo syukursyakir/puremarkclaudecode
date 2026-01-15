@@ -36,7 +36,9 @@ export interface ScanHistoryItem {
     status: ComplianceStatus;
     halal?: IngredientAnalysis['halal'];
     kosher?: IngredientAnalysis['kosher'];
+    allergy_flag?: string | null;
   }[];
+  userAllergies?: string[];
   allergens: string[];
   detectedLanguage?: string;
 }
@@ -127,6 +129,7 @@ export async function addScanToHistory(
     status: mapIngredientStatus(ing, diet),
     halal: ing.halal,
     kosher: ing.kosher,
+    allergy_flag: ing.allergy_flag,
   }));
   
   const newItem: ScanHistoryItem = {
