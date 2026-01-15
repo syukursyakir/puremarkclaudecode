@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: Spacing.xl,
   },
   brandRow: {
