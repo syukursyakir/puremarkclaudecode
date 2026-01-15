@@ -1,17 +1,27 @@
 const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// Exclude Python venv folder from Metro's file watching
+// Exclude Python venv and backend folder from Metro's file watching
 // This prevents permission errors with symlinks on Windows
 config.resolver.blockList = [
-  /venv\/.*/,
-  /\.git\/.*/,
+  /backend[\/\\]venv[\/\\].*/,
+  /backend[\/\\]__pycache__[\/\\].*/,
+  /venv[\/\\].*/,
+  /\.git[\/\\].*/,
 ];
 
-config.watcher.additionalExclusions = [
-  '**/venv/**',
-  '**/.git/**',
-];
+// Exclude from watcher
+config.watcher = {
+  ...config.watcher,
+  additionalExclusions: [
+    '**/backend/venv/**',
+    '**/backend/__pycache__/**',
+    '**/venv/**',
+    '**/.git/**',
+    '**/node_modules/.cache/**',
+  ],
+};
 
 module.exports = config;
