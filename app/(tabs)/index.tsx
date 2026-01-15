@@ -68,10 +68,13 @@ export default function DashboardScreen() {
       >
         {/* Header - CalAI Style */}
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>Pm</Text>
+          <View style={styles.brandRow}>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoText}>Pm</Text>
+            </View>
+            <Text style={styles.brandName}>PureMark</Text>
           </View>
-          <Text style={styles.brandName}>PureMark</Text>
+          <Text style={styles.tagline}>AI-powered ingredient scanner</Text>
         </View>
 
         {/* Primary Status Card */}
@@ -184,10 +187,13 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
+  brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xs,
   },
   logoContainer: {
     width: 40,
@@ -209,6 +215,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.black,
     letterSpacing: -0.5,
+  },
+  tagline: {
+    fontSize: 14,
+    color: Colors.gray500,
   },
 
   // Status Card
