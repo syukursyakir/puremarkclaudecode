@@ -223,10 +223,15 @@ function determineComplianceStatus(
   scanResponse: ScanResponse,
   diet: 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian' | null
 ): ComplianceStatus {
+  // No diet selected = everything is compliant
+  if (diet === null) {
+    return 'compliant';
+  }
+
   if (!scanResponse.diet_verdict) {
     return 'conditionally';
   }
-  
+
   if (diet === 'halal' && scanResponse.diet_verdict.halal) {
     const status = scanResponse.diet_verdict.halal.status;
     if (status === 'HALAL') return 'compliant';
@@ -269,6 +274,11 @@ function mapIngredientStatus(
   ing: IngredientAnalysis,
   diet: 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian' | null
 ): ComplianceStatus {
+  // No diet selected = everything is compliant
+  if (diet === null) {
+    return 'compliant';
+  }
+
   if (diet === 'halal' && ing.halal) {
     if (ing.halal.status === 'HALAL') return 'compliant';
     if (ing.halal.status === 'HARAM') return 'not_compliant';
