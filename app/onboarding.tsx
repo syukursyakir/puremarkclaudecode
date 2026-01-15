@@ -11,12 +11,15 @@ import {
   NativeScrollEvent,
   Pressable,
   ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { DotIndicator } from '@/components/onboarding/DotIndicator';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { saveProfile } from '@/services/storage';
+import { useAuth } from '@/contexts/AuthContext';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
 
 type DietType = 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian';
@@ -48,13 +51,15 @@ const allergenOptions = [
   { name: 'Sesame', emoji: '🫓' },
 ];
 
-const TOTAL_SLIDES = 4;
+const TOTAL_SLIDES = 6;
 
 export default function OnboardingScreen() {
   const { width } = useWindowDimensions();
   const flatListRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const { completeOnboarding } = useOnboarding();
+  const { signInWithGoogle, continueAsGuest } = useAuth();
+  const [authLoading, setAuthLoading] = useState(false);
 
   // User selections
   const [selectedDiet, setSelectedDiet] = useState<DietType | null>(null);
@@ -75,13 +80,31 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleComplete = async () => {
-    // Save user preferences
+  const handleGoogleSignIn = async () => {
+    try {
+      setAuthLoading(true);
+      // Save preferences first
+      await saveProfile({
+        diet: selectedDiet,
+        allergies: selectedAllergens,
+      });
+      await signInWithGoogle();
+      await completeOnboarding();
+      router.replace('/(tabs)/scan');
+    } catch (error) {
+      console.error('Sign in error:', error);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleContinueAsGuest = async () => {
+    // Save preferences
     await saveProfile({
       diet: selectedDiet,
       allergies: selectedAllergens,
     });
-    // Mark onboarding complete
+    continueAsGuest();
     await completeOnboarding();
     router.replace('/(tabs)/scan');
   };
@@ -97,43 +120,105 @@ export default function OnboardingScreen() {
   // Slide 1: Welcome
   const WelcomeSlide = () => (
     <View style={[styles.slide, { width }]}>
-      <View style={styles.slideContent}>
+      <View style={styles.topSection}>
         <View style={styles.logoContainer}>
           <Text style={styles.logoText}>Pm</Text>
         </View>
-        <Text style={styles.welcomeTitle}>Welcome to PureMark</Text>
-        <Text style={styles.welcomeSubtitle}>
-          AI-powered ingredient scanning{'\n'}for your dietary needs
-        </Text>
+      </View>
+      <View style={styles.middleSection}>
+        <Text style={styles.mainTitle}>Scan Ingredients{'\n'}Decide With Confidence</Text>
+        <Text style={styles.mainSubtitle}>AI-powered ingredient verification</Text>
         <View style={styles.featureList}>
-          <View style={styles.featureItem}>
-            <Ionicons name="scan-outline" size={24} color={Colors.gray600} />
-            <Text style={styles.featureText}>Scan any ingredient list</Text>
+          <View style={styles.featureRow}>
+            <View style={styles.featureDot} />
+            <Text style={styles.featureText}>Real-time AI breakdown</Text>
           </View>
-          <View style={styles.featureItem}>
-            <Ionicons name="checkmark-circle-outline" size={24} color={Colors.gray600} />
-            <Text style={styles.featureText}>Instant compliance check</Text>
+          <View style={styles.featureRow}>
+            <View style={styles.featureDot} />
+            <Text style={styles.featureText}>Dietary & certification compliance checks</Text>
           </View>
-          <View style={styles.featureItem}>
-            <Ionicons name="warning-outline" size={24} color={Colors.gray600} />
-            <Text style={styles.featureText}>Allergen alerts</Text>
+          <View style={styles.featureRow}>
+            <View style={styles.featureDot} />
+            <Text style={styles.featureText}>Transparent ingredient explanations</Text>
           </View>
         </View>
       </View>
-      <View style={styles.slideFooter}>
-        <Pressable style={styles.primaryButton} onPress={goToNextSlide}>
-          <Text style={styles.primaryButtonText}>Get Started</Text>
-          <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+      <View style={styles.bottomSection}>
+        <View style={styles.dotsWrapper}>
+          <DotIndicator totalDots={TOTAL_SLIDES} activeIndex={activeIndex} />
+        </View>
+        <Pressable style={styles.button} onPress={goToNextSlide}>
+          <Text style={styles.buttonText}>Get Started</Text>
         </Pressable>
       </View>
     </View>
   );
 
-  // Slide 2: Diet Selection
+  // Slide 2: Feature - AI Analyst
+  const FeatureSlide1 = () => (
+    <View style={[styles.slide, { width }]}>
+      <View style={styles.topSection}>
+        <Text style={styles.arrowText}>→</Text>
+      </View>
+      <View style={styles.middleSection}>
+        <Text style={styles.mainTitle}>AI Ingredient Analyst</Text>
+        <Text style={styles.mainSubtitle}>
+          Automatically analyzes ingredient lists using your dietary preferences and certification rules.
+        </Text>
+        <View style={styles.tagsContainer}>
+          <Text style={styles.tagText}>Personalized</Text>
+          <View style={styles.tagDot} />
+          <Text style={styles.tagText}>Certification-Grade</Text>
+          <View style={styles.tagDot} />
+          <Text style={styles.tagText}>AI-Powered</Text>
+        </View>
+      </View>
+      <View style={styles.bottomSection}>
+        <View style={styles.dotsWrapper}>
+          <DotIndicator totalDots={TOTAL_SLIDES} activeIndex={activeIndex} />
+        </View>
+        <Pressable style={styles.button} onPress={goToNextSlide}>
+          <Text style={styles.buttonText}>Next Feature</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  // Slide 3: Feature - Accurate Scanning
+  const FeatureSlide2 = () => (
+    <View style={[styles.slide, { width }]}>
+      <View style={styles.topSection}>
+        <Text style={styles.arrowText}>→</Text>
+      </View>
+      <View style={styles.middleSection}>
+        <Text style={styles.mainTitle}>Accurate Ingredient Scanning</Text>
+        <Text style={styles.mainSubtitle}>
+          Uses AI to detect and scan ingredients to get the most accurate results.
+        </Text>
+        <View style={styles.tagsContainer}>
+          <Text style={styles.tagText}>Accurate</Text>
+          <View style={styles.tagDot} />
+          <Text style={styles.tagText}>AI-Powered</Text>
+          <View style={styles.tagDot} />
+          <Text style={styles.tagText}>Reliable</Text>
+        </View>
+      </View>
+      <View style={styles.bottomSection}>
+        <View style={styles.dotsWrapper}>
+          <DotIndicator totalDots={TOTAL_SLIDES} activeIndex={activeIndex} />
+        </View>
+        <Pressable style={styles.button} onPress={goToNextSlide}>
+          <Text style={styles.buttonText}>Set Up Profile</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  // Slide 4: Diet Selection
   const DietSlide = () => (
     <View style={[styles.slide, { width }]}>
       <View style={styles.slideHeader}>
-        <Text style={styles.stepLabel}>Step 1 of 2</Text>
+        <Text style={styles.stepLabel}>STEP 1 OF 2</Text>
         <Text style={styles.slideTitle}>What's your diet?</Text>
         <Text style={styles.slideSubtitle}>
           We'll check ingredients against your dietary requirements
@@ -181,7 +266,10 @@ export default function OnboardingScreen() {
           </View>
         </Pressable>
       </ScrollView>
-      <View style={styles.slideFooter}>
+      <View style={styles.bottomSection}>
+        <View style={styles.dotsWrapper}>
+          <DotIndicator totalDots={TOTAL_SLIDES} activeIndex={activeIndex} />
+        </View>
         <Pressable style={styles.primaryButton} onPress={goToNextSlide}>
           <Text style={styles.primaryButtonText}>Continue</Text>
           <Ionicons name="arrow-forward" size={20} color={Colors.white} />
@@ -190,11 +278,11 @@ export default function OnboardingScreen() {
     </View>
   );
 
-  // Slide 3: Allergen Selection
+  // Slide 5: Allergen Selection
   const AllergenSlide = () => (
     <View style={[styles.slide, { width }]}>
       <View style={styles.slideHeader}>
-        <Text style={styles.stepLabel}>Step 2 of 2</Text>
+        <Text style={styles.stepLabel}>STEP 2 OF 2</Text>
         <Text style={styles.slideTitle}>Any allergies?</Text>
         <Text style={styles.slideSubtitle}>
           We'll warn you when these ingredients are detected
@@ -226,13 +314,15 @@ export default function OnboardingScreen() {
           );
         })}
       </ScrollView>
-      <View style={styles.slideFooter}>
+      <View style={styles.bottomSection}>
         <Text style={styles.skipHint}>
           {selectedAllergens.length === 0
             ? 'Tap allergens to select, or skip if none'
-            : `${selectedAllergens.length} allergen${selectedAllergens.length > 1 ? 's' : ''} selected`
-          }
+            : `${selectedAllergens.length} allergen${selectedAllergens.length > 1 ? 's' : ''} selected`}
         </Text>
+        <View style={styles.dotsWrapper}>
+          <DotIndicator totalDots={TOTAL_SLIDES} activeIndex={activeIndex} />
+        </View>
         <Pressable style={styles.primaryButton} onPress={goToNextSlide}>
           <Text style={styles.primaryButtonText}>
             {selectedAllergens.length === 0 ? 'Skip' : 'Continue'}
@@ -243,57 +333,89 @@ export default function OnboardingScreen() {
     </View>
   );
 
-  // Slide 4: Ready to Scan
-  const ReadySlide = () => (
+  // Slide 6: Auth Slide
+  const AuthSlide = () => (
     <View style={[styles.slide, { width }]}>
-      <View style={styles.slideContent}>
-        <View style={styles.readyIconContainer}>
-          <Ionicons name="checkmark-circle" size={80} color="#7A9F7A" />
+      <View style={styles.authContent}>
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoText}>Pm</Text>
         </View>
-        <Text style={styles.readyTitle}>You're all set!</Text>
-        <Text style={styles.readySubtitle}>
-          Your preferences have been saved.{'\n'}Start scanning ingredients now.
+        <Text style={styles.authTitle}>You're all set!</Text>
+        <Text style={styles.authSubtitle}>
+          Sign in to sync your data across devices, or continue as a guest.
         </Text>
 
         {/* Summary */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Diet:</Text>
+            <Text style={styles.summaryLabel}>Diet</Text>
             <Text style={styles.summaryValue}>
               {selectedDiet
-                ? dietOptions.find(d => d.id === selectedDiet)?.label
-                : 'None selected'}
+                ? dietOptions.find((d) => d.id === selectedDiet)?.label
+                : 'None'}
             </Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Allergens:</Text>
-            <Text style={styles.summaryValue}>
+            <Text style={styles.summaryLabel}>Allergens</Text>
+            <Text style={styles.summaryValue} numberOfLines={1}>
               {selectedAllergens.length > 0
-                ? selectedAllergens.join(', ')
-                : 'None selected'}
+                ? selectedAllergens.length > 2
+                  ? `${selectedAllergens.slice(0, 2).join(', ')} +${selectedAllergens.length - 2}`
+                  : selectedAllergens.join(', ')
+                : 'None'}
             </Text>
           </View>
         </View>
-
-        <Text style={styles.editHint}>
-          You can change these anytime in Settings
-        </Text>
       </View>
-      <View style={styles.slideFooter}>
-        <Pressable style={styles.primaryButton} onPress={handleComplete}>
-          <Ionicons name="scan" size={20} color={Colors.white} />
-          <Text style={styles.primaryButtonText}>Start Scanning</Text>
-        </Pressable>
+
+      <View style={styles.authButtonsSection}>
+        <View style={styles.dotsWrapper}>
+          <DotIndicator totalDots={TOTAL_SLIDES} activeIndex={activeIndex} />
+        </View>
+
+        {/* Google Sign In */}
+        <TouchableOpacity
+          style={styles.googleButton}
+          onPress={handleGoogleSignIn}
+          disabled={authLoading}
+        >
+          {authLoading ? (
+            <ActivityIndicator color={Colors.white} />
+          ) : (
+            <>
+              <Ionicons name="logo-google" size={20} color={Colors.white} />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Continue as Guest */}
+        <TouchableOpacity style={styles.guestButton} onPress={handleContinueAsGuest}>
+          <Text style={styles.guestButtonText}>Continue as Guest</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.guestNote}>
+          Your data will be stored locally on this device only
+        </Text>
       </View>
     </View>
   );
 
   const slides = [
     { key: 'welcome', component: WelcomeSlide },
+    { key: 'feature1', component: FeatureSlide1 },
+    { key: 'feature2', component: FeatureSlide2 },
     { key: 'diet', component: DietSlide },
     { key: 'allergen', component: AllergenSlide },
-    { key: 'ready', component: ReadySlide },
+    { key: 'auth', component: AuthSlide },
   ];
 
   return (
@@ -311,13 +433,8 @@ export default function OnboardingScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         bounces={false}
-        scrollEnabled={false} // Disable swipe, use buttons only
+        scrollEnabled={false}
       />
-
-      {/* Dot Indicator */}
-      <View style={styles.indicatorContainer}>
-        <DotIndicator totalDots={TOTAL_SLIDES} activeIndex={activeIndex} />
-      </View>
     </SafeAreaView>
   );
 }
@@ -327,106 +444,157 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.gray100,
   },
-  indicatorContainer: {
-    position: 'absolute',
-    bottom: Spacing.xxxl + Spacing.xxl,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
   slide: {
     flex: 1,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xxxl + Spacing.xl,
+    paddingBottom: Spacing.lg,
   },
-  slideContent: {
+
+  // Original onboarding layout
+  topSection: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  slideHeader: {
-    paddingTop: Spacing.lg,
-    marginBottom: Spacing.lg,
+  middleSection: {
+    flex: 1.2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
   },
-  stepLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#7A9F7A',
-    marginBottom: Spacing.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  bottomSection: {
+    paddingTop: Spacing.sm,
   },
-  slideTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.black,
-    marginBottom: Spacing.sm,
-  },
-  slideSubtitle: {
-    fontSize: 15,
-    color: Colors.gray500,
-    lineHeight: 22,
-  },
-  slideFooter: {
-    paddingTop: Spacing.md,
+  dotsWrapper: {
+    alignItems: 'center',
+    marginBottom: Spacing.md,
   },
 
-  // Welcome slide
+  // Logo
   logoContainer: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     backgroundColor: Colors.gray700,
     borderRadius: BorderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.xl,
   },
   logoText: {
-    fontSize: 40,
+    fontSize: 48,
     fontWeight: '300',
     color: Colors.white,
     letterSpacing: -2,
   },
-  welcomeTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.black,
-    textAlign: 'center',
-    marginBottom: Spacing.sm,
-  },
-  welcomeSubtitle: {
-    fontSize: 16,
-    color: Colors.gray500,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: Spacing.xl,
-  },
-  featureList: {
-    alignSelf: 'stretch',
-    gap: Spacing.md,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    gap: Spacing.md,
-  },
-  featureText: {
-    fontSize: 15,
-    color: Colors.gray700,
-    fontWeight: '500',
+  arrowText: {
+    fontSize: 48,
+    color: Colors.gray400,
   },
 
-  // Diet slide
+  // Main text
+  mainTitle: {
+    ...Typography.h2,
+    color: Colors.black,
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+  },
+  mainSubtitle: {
+    ...Typography.body,
+    color: Colors.gray500,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+
+  // Features list
+  featureList: {
+    alignSelf: 'stretch',
+    marginTop: Spacing.md,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  featureDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.gray400,
+    marginTop: 10,
+    marginRight: Spacing.sm,
+  },
+  featureText: {
+    ...Typography.bodySmall,
+    color: Colors.gray600,
+    flex: 1,
+  },
+
+  // Tags
+  tagsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.lg,
+  },
+  tagText: {
+    ...Typography.caption,
+    color: Colors.gray500,
+  },
+  tagDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.gray300,
+    marginHorizontal: Spacing.sm,
+  },
+
+  // Button
+  button: {
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.gray300,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
+  },
+  buttonText: {
+    ...Typography.button,
+    color: Colors.black,
+  },
+
+  // Setup slides header
+  slideHeader: {
+    paddingTop: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  stepLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#7A9F7A',
+    marginBottom: Spacing.xs,
+    letterSpacing: 1,
+  },
+  slideTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: Colors.black,
+    marginBottom: Spacing.xs,
+  },
+  slideSubtitle: {
+    fontSize: 14,
+    color: Colors.gray500,
+    lineHeight: 20,
+  },
+
+  // Options
   optionsScrollView: {
     flex: 1,
   },
   optionsContainer: {
     gap: Spacing.sm,
-    paddingBottom: Spacing.md,
+    paddingBottom: Spacing.sm,
   },
   dietOption: {
     flexDirection: 'row',
@@ -442,14 +610,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5FAF5',
   },
   dietEmoji: {
-    fontSize: 28,
+    fontSize: 26,
     marginRight: Spacing.md,
   },
   dietInfo: {
     flex: 1,
   },
   dietLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: Colors.black,
     marginBottom: 2,
@@ -458,13 +626,13 @@ const styles = StyleSheet.create({
     color: '#4A7A4A',
   },
   dietDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.gray500,
   },
   radioOuter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
     borderColor: Colors.gray300,
     justifyContent: 'center',
@@ -474,18 +642,18 @@ const styles = StyleSheet.create({
     borderColor: '#7A9F7A',
   },
   radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#7A9F7A',
   },
 
-  // Allergen slide
+  // Allergen grid
   allergenGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
-    paddingBottom: Spacing.md,
+    paddingBottom: Spacing.sm,
   },
   allergenOption: {
     width: '31%',
@@ -503,11 +671,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF8F0',
   },
   allergenEmoji: {
-    fontSize: 32,
+    fontSize: 28,
     marginBottom: Spacing.xs,
   },
   allergenLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: Colors.gray600,
     textAlign: 'center',
@@ -517,77 +685,23 @@ const styles = StyleSheet.create({
   },
   checkBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#C4A574',
     justifyContent: 'center',
     alignItems: 'center',
   },
   skipHint: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.gray500,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
-  },
-
-  // Ready slide
-  readyIconContainer: {
-    marginBottom: Spacing.lg,
-  },
-  readyTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.black,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
-  readySubtitle: {
-    fontSize: 16,
-    color: Colors.gray500,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: Spacing.xl,
-  },
-  summaryCard: {
-    alignSelf: 'stretch',
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.gray500,
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.black,
-    flex: 1,
-    textAlign: 'right',
-    marginLeft: Spacing.md,
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: Colors.gray200,
-    marginVertical: Spacing.md,
-  },
-  editHint: {
-    fontSize: 13,
-    color: Colors.gray400,
-    textAlign: 'center',
-  },
 
-  // Buttons
+  // Primary button
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -602,5 +716,111 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.white,
+  },
+
+  // Auth slide
+  authContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  authTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: Colors.black,
+    textAlign: 'center',
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  authSubtitle: {
+    fontSize: 14,
+    color: Colors.gray500,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+  },
+  summaryCard: {
+    alignSelf: 'stretch',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.gray500,
+  },
+  summaryValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.black,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: Spacing.md,
+  },
+  summaryDivider: {
+    height: 1,
+    backgroundColor: Colors.gray200,
+    marginVertical: Spacing.sm,
+  },
+
+  // Auth buttons
+  authButtonsSection: {
+    paddingTop: Spacing.md,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.black,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.white,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.gray300,
+  },
+  dividerText: {
+    fontSize: 12,
+    color: Colors.gray500,
+    marginHorizontal: Spacing.md,
+  },
+  guestButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.gray300,
+  },
+  guestButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.black,
+  },
+  guestNote: {
+    fontSize: 11,
+    color: Colors.gray400,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
   },
 });
