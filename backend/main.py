@@ -21,6 +21,10 @@ from services.halal import evaluate_halal_strict, aggregate_product_halal
 from services.kosher import evaluate_kosher_strict, aggregate_product_kosher, kosher_tags
 from services.allergens import check_allergy, extract_allergens_from_advisory
 from services.lecithin import detect_lecithin_source
+from services.diets import (
+    evaluate_vegan, evaluate_vegetarian, evaluate_pescetarian,
+    aggregate_vegan, aggregate_vegetarian, aggregate_pescetarian
+)
 
 # ================================================================
 # App Configuration
@@ -272,6 +276,9 @@ async def scan_ingredients(request: ScanRequest):
         enhanced = []
         halal_results = []
         kosher_results = []
+        vegan_results = []
+        vegetarian_results = []
+        pescetarian_results = []
 
         for ing in ingredients:
             normalized = (ing.get("normalized") or ing.get("english") or ing.get("original") or "").lower()
@@ -311,6 +318,9 @@ async def scan_ingredients(request: ScanRequest):
 
             halal_result = None
             kosher_result = None
+            vegan_result = None
+            vegetarian_result = None
+            pescetarian_result = None
 
             if diet == "halal":
                 halal_original = raw_ocr_text if (lecithin_result_orig["is_lecithin"] or lecithin_result_norm["is_lecithin"]) else original
@@ -320,6 +330,18 @@ async def scan_ingredients(request: ScanRequest):
             if diet == "kosher":
                 kosher_result = evaluate_kosher_strict(normalized)
                 kosher_results.append(kosher_result)
+
+            if diet == "vegan":
+                vegan_result = evaluate_vegan(normalized)
+                vegan_results.append(vegan_result)
+
+            if diet == "vegetarian":
+                vegetarian_result = evaluate_vegetarian(normalized)
+                vegetarian_results.append(vegetarian_result)
+
+            if diet == "pescetarian":
+                pescetarian_result = evaluate_pescetarian(normalized)
+                pescetarian_results.append(pescetarian_result)
 
             # Allergen check
             allergy_check_text = raw_ocr_text if (lecithin_result_orig["is_lecithin"] or lecithin_result_norm["is_lecithin"]) else original
@@ -342,6 +364,24 @@ async def scan_ingredients(request: ScanRequest):
                     "evidence": kosher_result["evidence"] if kosher_result else None,
                     "tags": kosher_tags(kosher_result) if kosher_result else None,
                 } if kosher_result else None,
+                "vegan": {
+                    "status": vegan_result["status"] if vegan_result else None,
+                    "confidence": vegan_result["confidence"] if vegan_result else None,
+                    "reason_codes": vegan_result["reason_codes"] if vegan_result else None,
+                    "evidence": vegan_result["evidence"] if vegan_result else None,
+                } if vegan_result else None,
+                "vegetarian": {
+                    "status": vegetarian_result["status"] if vegetarian_result else None,
+                    "confidence": vegetarian_result["confidence"] if vegetarian_result else None,
+                    "reason_codes": vegetarian_result["reason_codes"] if vegetarian_result else None,
+                    "evidence": vegetarian_result["evidence"] if vegetarian_result else None,
+                } if vegetarian_result else None,
+                "pescetarian": {
+                    "status": pescetarian_result["status"] if pescetarian_result else None,
+                    "confidence": pescetarian_result["confidence"] if pescetarian_result else None,
+                    "reason_codes": pescetarian_result["reason_codes"] if pescetarian_result else None,
+                    "evidence": pescetarian_result["evidence"] if pescetarian_result else None,
+                } if pescetarian_result else None,
                 "allergy_flag": allergy_flag,
             })
 
@@ -355,6 +395,18 @@ async def scan_ingredients(request: ScanRequest):
         product_halal = None
         if diet == "halal":
             product_halal = aggregate_product_halal(halal_results, True)
+
+        product_vegan = None
+        if diet == "vegan":
+            product_vegan = aggregate_vegan(vegan_results)
+
+        product_vegetarian = None
+        if diet == "vegetarian":
+            product_vegetarian = aggregate_vegetarian(vegetarian_results)
+
+        product_pescetarian = None
+        if diet == "pescetarian":
+            product_pescetarian = aggregate_pescetarian(pescetarian_results)
 
         diet_verdict = {}
 
@@ -374,6 +426,33 @@ async def scan_ingredients(request: ScanRequest):
                 "reason": product_kosher["reason"],
                 "failing_ingredients": product_kosher["failing_ingredients"],
                 "reason_codes": product_kosher["reason_codes"],
+            }
+
+        if product_vegan:
+            diet_verdict["vegan"] = {
+                "status": product_vegan["status"],
+                "confidence": product_vegan["confidence"],
+                "reason": product_vegan["reason"],
+                "failing_ingredients": product_vegan["failing_ingredients"],
+                "reason_codes": product_vegan["reason_codes"],
+            }
+
+        if product_vegetarian:
+            diet_verdict["vegetarian"] = {
+                "status": product_vegetarian["status"],
+                "confidence": product_vegetarian["confidence"],
+                "reason": product_vegetarian["reason"],
+                "failing_ingredients": product_vegetarian["failing_ingredients"],
+                "reason_codes": product_vegetarian["reason_codes"],
+            }
+
+        if product_pescetarian:
+            diet_verdict["pescetarian"] = {
+                "status": product_pescetarian["status"],
+                "confidence": product_pescetarian["confidence"],
+                "reason": product_pescetarian["reason"],
+                "failing_ingredients": product_pescetarian["failing_ingredients"],
+                "reason_codes": product_pescetarian["reason_codes"],
             }
 
         # ============================================================

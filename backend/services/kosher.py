@@ -54,6 +54,46 @@ KOSHER_CERTIFICATIONS = [
     "dairy", "meat", "chalav yisrael",
 ]
 
+# Known kosher-safe plant ingredients (no certification needed)
+KOSHER_SAFE_INGREDIENTS = [
+    # Sugars & sweeteners
+    "sugar", "cane sugar", "beet sugar", "brown sugar", "powdered sugar",
+    "honey", "maple syrup", "agave", "stevia", "sucralose", "aspartame",
+    "glucose", "fructose", "dextrose", "maltodextrin", "corn syrup",
+    # Grains & starches
+    "flour", "wheat flour", "rice", "corn", "oats", "barley", "rye",
+    "cornstarch", "corn starch", "potato starch", "tapioca", "starch",
+    # Oils (plant-based)
+    "vegetable oil", "sunflower oil", "canola oil", "olive oil", "palm oil",
+    "coconut oil", "soybean oil", "corn oil", "rapeseed oil", "safflower oil",
+    # Fruits & vegetables
+    "tomato", "onion", "garlic", "carrot", "potato", "apple", "orange",
+    "lemon", "lime", "banana", "berry", "berries", "fruit", "vegetable",
+    # Nuts & seeds
+    "almond", "peanut", "walnut", "cashew", "pistachio", "sesame",
+    "sunflower seed", "pumpkin seed", "chia", "flax", "hemp seed",
+    # Legumes
+    "soy", "soybean", "chickpea", "lentil", "bean", "pea",
+    # Spices & herbs
+    "salt", "pepper", "cinnamon", "vanilla", "paprika", "turmeric",
+    "cumin", "oregano", "basil", "thyme", "rosemary", "parsley",
+    "ginger", "nutmeg", "clove", "cardamom", "coriander",
+    # Common additives (plant-derived)
+    "citric acid", "ascorbic acid", "vitamin c", "vitamin e", "tocopherol",
+    "pectin", "agar", "carrageenan", "guar gum", "xanthan gum", "locust bean gum",
+    "soy lecithin", "sunflower lecithin", "lecithin",
+    "natural flavor", "natural flavoring", "artificial flavor",
+    "color", "caramel color", "annatto", "beta carotene", "turmeric color",
+    "baking soda", "baking powder", "yeast", "sodium bicarbonate",
+    "calcium carbonate", "potassium sorbate", "sodium benzoate",
+    "water", "carbonated water", "sparkling water",
+    # Cocoa & coffee
+    "cocoa", "cocoa powder", "cocoa butter", "chocolate", "coffee",
+    # Vinegar (non-grape)
+    "vinegar", "apple cider vinegar", "white vinegar", "rice vinegar",
+    "distilled vinegar", "malt vinegar",
+]
+
 # Source-dependent ingredients
 SOURCE_DEPENDENT_KOSHER = {
     "gelatin": {
@@ -80,6 +120,12 @@ def has_kosher_certification(text: str) -> bool:
     return any(word_in_text(text_lower, cert) for cert in KOSHER_CERTIFICATIONS)
 
 
+def is_kosher_safe_ingredient(text: str) -> bool:
+    """Check if ingredient is a known kosher-safe plant ingredient."""
+    text_lower = normalize_text(text)
+    return any(word_in_text(text_lower, safe) for safe in KOSHER_SAFE_INGREDIENTS)
+
+
 def evaluate_kosher_strict(ingredient_text: str) -> Dict[str, Any]:
     """
     Evaluate kosher status of an ingredient.
@@ -98,6 +144,9 @@ def evaluate_kosher_strict(ingredient_text: str) -> Dict[str, Any]:
 
     # Check certification
     has_cert = has_kosher_certification(ing)
+
+    # 0) Quick check for known kosher-safe ingredients (before checking forbidden items)
+    # But still check for forbidden items first to catch things like "pork flavored chips"
 
     # 1) Forbidden land animals
     if any_word_in_text(ing, FORBIDDEN_LAND_ANIMALS):
@@ -182,20 +231,28 @@ def evaluate_kosher_strict(ingredient_text: str) -> Dict[str, Any]:
                     "evidence": [f"Non-kosher {ing_type} source"]
                 }
 
-            # Unknown source
+            # Unknown source - check if it's a known safe variant
+            if is_kosher_safe_ingredient(ing):
+                reasons.append(f"{ing_type}_plant_source_likely")
+                evidence.append(f"{ing_type.title()} appears to be plant-derived")
+                continue
+
             if has_cert:
                 reasons.append(f"{ing_type}_certified")
                 evidence.append(f"{ing_type.title()} with kosher certification")
             else:
-                reasons.append(f"{ing_type}_source_unknown")
-                evidence.append(f"{ing_type.title()} source requires verification")
-                return {
-                    "ingredient": ing_raw,
-                    "status": REQUIRES_CERTIFICATION,
-                    "confidence": CONF_LOW,
-                    "reason_codes": reasons,
-                    "evidence": evidence
-                }
+                # For gelatin specifically, be stricter
+                if ing_type == "gelatin":
+                    return {
+                        "ingredient": ing_raw,
+                        "status": REQUIRES_CERTIFICATION,
+                        "confidence": CONF_LOW,
+                        "reason_codes": [f"{ing_type}_source_unknown"],
+                        "evidence": [f"{ing_type.title()} source unknown - may be animal-derived"]
+                    }
+                # For others like glycerin/enzyme, assume plant-based in modern food
+                reasons.append(f"{ing_type}_likely_plant")
+                evidence.append(f"{ing_type.title()} (commonly plant-derived in modern food)")
 
     # 8) Check for dairy/meat indicators
     is_dairy = any_word_in_text(ing, ["milk", "cream", "cheese", "butter", "whey", "casein", "lactose"])
@@ -237,6 +294,16 @@ def evaluate_kosher_strict(ingredient_text: str) -> Dict[str, Any]:
             "confidence": CONF_MED,
             "reason_codes": dedupe(reasons),
             "evidence": dedupe(evidence)
+        }
+
+    # Check if it's a known kosher-safe ingredient
+    if is_kosher_safe_ingredient(ing):
+        return {
+            "ingredient": ing_raw,
+            "status": KOSHER_CONFIRMED,
+            "confidence": CONF_HIGH,
+            "reason_codes": ["plant_based_kosher"],
+            "evidence": ["Plant-based ingredient, inherently kosher"]
         }
 
     # Default: No issues found

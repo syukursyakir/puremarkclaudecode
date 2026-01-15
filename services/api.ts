@@ -22,8 +22,16 @@ const USE_RAILWAY = BACKEND_TYPE === 'railway' || BACKEND_TYPE === 'local';
 // ================================================================
 
 export interface UserProfile {
-  diet: 'halal' | 'kosher' | null;
+  diet: 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian' | null;
   allergies: string[];
+}
+
+// Common diet result type for vegan/vegetarian/pescetarian
+interface DietResult {
+  status: 'COMPLIANT' | 'NOT_COMPLIANT' | 'UNCERTAIN';
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  reason_codes: string[];
+  evidence: string[];
 }
 
 export interface IngredientAnalysis {
@@ -43,7 +51,19 @@ export interface IngredientAnalysis {
     evidence: string[];
     tags: string[];
   };
+  vegan?: DietResult;
+  vegetarian?: DietResult;
+  pescetarian?: DietResult;
   allergy_flag: string | null;
+}
+
+// Common diet verdict type
+interface DietVerdictResult {
+  status: string;
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  reason: string;
+  failing_ingredients: string[];
+  reason_codes: string[];
 }
 
 export interface DietVerdict {
@@ -61,6 +81,9 @@ export interface DietVerdict {
     failing_ingredients: string[];
     reason_codes: string[];
   };
+  vegan?: DietVerdictResult;
+  vegetarian?: DietVerdictResult;
+  pescetarian?: DietVerdictResult;
 }
 
 export interface ScanResponse {

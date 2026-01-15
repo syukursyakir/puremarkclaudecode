@@ -38,27 +38,48 @@ const statusConfig = {
 // Get display text for diet-specific status
 function getStatusLabel(item: ScanHistoryItem): string {
   if (!item.dietVerdict) return statusConfig[item.status].label;
-  
+
   if (item.diet === 'halal' && item.dietVerdict.halal) {
     const status = item.dietVerdict.halal.status;
     if (status === 'HALAL') return 'Halal';
     if (status === 'HARAM') return 'Haram';
     return 'Needs Verification';
   }
-  
+
   if (item.diet === 'kosher' && item.dietVerdict.kosher) {
     const status = item.dietVerdict.kosher.status;
     if (status === 'KOSHER_CONFIRMED') return 'Kosher';
     if (status === 'NOT_KOSHER') return 'Not Kosher';
     return 'Needs Certification';
   }
-  
+
+  if (item.diet === 'vegan' && item.dietVerdict.vegan) {
+    const status = item.dietVerdict.vegan.status;
+    if (status === 'COMPLIANT') return 'Vegan';
+    if (status === 'NOT_COMPLIANT') return 'Not Vegan';
+    return 'Uncertain';
+  }
+
+  if (item.diet === 'vegetarian' && item.dietVerdict.vegetarian) {
+    const status = item.dietVerdict.vegetarian.status;
+    if (status === 'COMPLIANT') return 'Vegetarian';
+    if (status === 'NOT_COMPLIANT') return 'Not Vegetarian';
+    return 'Uncertain';
+  }
+
+  if (item.diet === 'pescetarian' && item.dietVerdict.pescetarian) {
+    const status = item.dietVerdict.pescetarian.status;
+    if (status === 'COMPLIANT') return 'Pescetarian';
+    if (status === 'NOT_COMPLIANT') return 'Not Pescetarian';
+    return 'Uncertain';
+  }
+
   return statusConfig[item.status].label;
 }
 
 function getIngredientStatusLabel(
   ingredient: ScanHistoryItem['ingredients'][0],
-  diet: 'halal' | 'kosher' | null
+  diet: 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian' | null
 ): string {
   if (diet === 'halal' && ingredient.halal) {
     const status = ingredient.halal.status;
@@ -67,14 +88,35 @@ function getIngredientStatusLabel(
     if (status === 'MUSHBOOH') return 'MUSHBOOH';
     return 'UNVERIFIED';
   }
-  
+
   if (diet === 'kosher' && ingredient.kosher) {
     const status = ingredient.kosher.status;
     if (status === 'KOSHER_CONFIRMED') return 'KOSHER';
     if (status === 'NOT_KOSHER') return 'NOT KOSHER';
     return 'NEEDS CERT';
   }
-  
+
+  if (diet === 'vegan' && ingredient.vegan) {
+    const status = ingredient.vegan.status;
+    if (status === 'COMPLIANT') return 'VEGAN';
+    if (status === 'NOT_COMPLIANT') return 'NOT VEGAN';
+    return 'UNCERTAIN';
+  }
+
+  if (diet === 'vegetarian' && ingredient.vegetarian) {
+    const status = ingredient.vegetarian.status;
+    if (status === 'COMPLIANT') return 'VEGETARIAN';
+    if (status === 'NOT_COMPLIANT') return 'NOT VEG';
+    return 'UNCERTAIN';
+  }
+
+  if (diet === 'pescetarian' && ingredient.pescetarian) {
+    const status = ingredient.pescetarian.status;
+    if (status === 'COMPLIANT') return 'PESCETARIAN';
+    if (status === 'NOT_COMPLIANT') return 'NOT PESC';
+    return 'UNCERTAIN';
+  }
+
   return statusConfig[ingredient.status].badgeLabel;
 }
 
@@ -277,9 +319,18 @@ export default function ScanResultsScreen() {
           const hasUserAllergen = ingredient.allergy_flag && isUserAllergen(ingredient.allergy_flag);
 
           // Get evidence text for expansion
-          const evidence = item.diet === 'halal'
-            ? ingredient.halal?.evidence
-            : ingredient.kosher?.evidence;
+          // Get evidence based on diet type
+          const getEvidence = () => {
+            switch (item.diet) {
+              case 'halal': return ingredient.halal?.evidence;
+              case 'kosher': return ingredient.kosher?.evidence;
+              case 'vegan': return ingredient.vegan?.evidence;
+              case 'vegetarian': return ingredient.vegetarian?.evidence;
+              case 'pescetarian': return ingredient.pescetarian?.evidence;
+              default: return undefined;
+            }
+          };
+          const evidence = getEvidence();
 
           return (
             <Pressable

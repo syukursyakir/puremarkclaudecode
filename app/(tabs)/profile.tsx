@@ -19,15 +19,20 @@ import { saveProfile as saveProfileToCloud, loadProfile as loadProfileFromCloud 
 import { UserProfile } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 
+type DietType = 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian';
+
 interface DietaryOption {
-  id: 'halal' | 'kosher';
+  id: DietType;
   label: string;
   description: string;
 }
 
 const dietaryOptions: DietaryOption[] = [
-  { id: 'halal', label: 'Halal', description: 'Check ingredients against Halal standards' },
-  { id: 'kosher', label: 'Kosher', description: 'Check ingredients against Kosher standards' },
+  { id: 'halal', label: 'Halal', description: 'Islamic dietary standards' },
+  { id: 'kosher', label: 'Kosher', description: 'Jewish dietary standards' },
+  { id: 'vegan', label: 'Vegan', description: 'No animal products' },
+  { id: 'vegetarian', label: 'Vegetarian', description: 'No meat or fish' },
+  { id: 'pescetarian', label: 'Pescetarian', description: 'No meat, fish allowed' },
 ];
 
 const allergenOptions = [
@@ -43,7 +48,7 @@ const allergenOptions = [
 ];
 
 export default function ProfileScreen() {
-  const [selectedDiet, setSelectedDiet] = useState<'halal' | 'kosher' | null>('halal');
+  const [selectedDiet, setSelectedDiet] = useState<DietType | null>('halal');
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
   const [showToast, setShowToast] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,7 +91,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const persistProfile = async (diet: 'halal' | 'kosher' | null, allergies: string[]) => {
+  const persistProfile = async (diet: DietType | null, allergies: string[]) => {
     try {
       // Save to local storage first
       await saveProfile({ diet, allergies });
@@ -135,7 +140,7 @@ export default function ProfileScreen() {
     }, 2000);
   };
 
-  const handleDietToggle = (id: 'halal' | 'kosher') => {
+  const handleDietToggle = (id: DietType) => {
     // Only allow one diet at a time - selecting one deselects the other
     const newDiet = selectedDiet === id ? null : id;
     setSelectedDiet(newDiet);

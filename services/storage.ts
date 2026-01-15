@@ -29,13 +29,16 @@ export interface ScanHistoryItem {
   ingredientsCount: number;
   status: ComplianceStatus;
   imageColor: string;
-  diet: 'halal' | 'kosher' | null;
+  diet: 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian' | null;
   dietVerdict?: DietVerdict;
   ingredients: {
     name: string;
     status: ComplianceStatus;
     halal?: IngredientAnalysis['halal'];
     kosher?: IngredientAnalysis['kosher'];
+    vegan?: IngredientAnalysis['vegan'];
+    vegetarian?: IngredientAnalysis['vegetarian'];
+    pescetarian?: IngredientAnalysis['pescetarian'];
     allergy_flag?: string | null;
   }[];
   userAllergies?: string[];
@@ -104,7 +107,7 @@ export async function getScanHistory(): Promise<ScanHistoryItem[]> {
  */
 export async function addScanToHistory(
   scanResponse: ScanResponse,
-  diet: 'halal' | 'kosher' | null
+  diet: 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian' | null
 ): Promise<ScanHistoryItem> {
   const history = await getScanHistory();
   
@@ -129,6 +132,9 @@ export async function addScanToHistory(
     status: mapIngredientStatus(ing, diet),
     halal: ing.halal,
     kosher: ing.kosher,
+    vegan: ing.vegan,
+    vegetarian: ing.vegetarian,
+    pescetarian: ing.pescetarian,
     allergy_flag: ing.allergy_flag,
   }));
   
@@ -202,7 +208,7 @@ export async function clearHistory(): Promise<void> {
 
 function determineComplianceStatus(
   scanResponse: ScanResponse,
-  diet: 'halal' | 'kosher' | null
+  diet: 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian' | null
 ): ComplianceStatus {
   if (!scanResponse.diet_verdict) {
     return 'conditionally';
@@ -227,20 +233,38 @@ function determineComplianceStatus(
 
 function mapIngredientStatus(
   ing: IngredientAnalysis,
-  diet: 'halal' | 'kosher' | null
+  diet: 'halal' | 'kosher' | 'vegan' | 'vegetarian' | 'pescetarian' | null
 ): ComplianceStatus {
   if (diet === 'halal' && ing.halal) {
     if (ing.halal.status === 'HALAL') return 'compliant';
     if (ing.halal.status === 'HARAM') return 'not_compliant';
     return 'conditionally';
   }
-  
+
   if (diet === 'kosher' && ing.kosher) {
     if (ing.kosher.status === 'KOSHER_CONFIRMED') return 'compliant';
     if (ing.kosher.status === 'NOT_KOSHER') return 'not_compliant';
     return 'conditionally';
   }
-  
+
+  if (diet === 'vegan' && ing.vegan) {
+    if (ing.vegan.status === 'COMPLIANT') return 'compliant';
+    if (ing.vegan.status === 'NOT_COMPLIANT') return 'not_compliant';
+    return 'conditionally';
+  }
+
+  if (diet === 'vegetarian' && ing.vegetarian) {
+    if (ing.vegetarian.status === 'COMPLIANT') return 'compliant';
+    if (ing.vegetarian.status === 'NOT_COMPLIANT') return 'not_compliant';
+    return 'conditionally';
+  }
+
+  if (diet === 'pescetarian' && ing.pescetarian) {
+    if (ing.pescetarian.status === 'COMPLIANT') return 'compliant';
+    if (ing.pescetarian.status === 'NOT_COMPLIANT') return 'not_compliant';
+    return 'conditionally';
+  }
+
   return 'conditionally';
 }
 
