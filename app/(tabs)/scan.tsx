@@ -80,10 +80,15 @@ export default function ScanScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Header - CalAI Style */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Ingredient Scan</Text>
-          <Text style={styles.headerSubtitle}>Certification-grade ingredient analysis</Text>
+          <View style={styles.brandRow}>
+            <View style={styles.logoMini}>
+              <Text style={styles.logoMiniText}>Pm</Text>
+            </View>
+            <Text style={styles.brandName}>PureMark</Text>
+          </View>
+          <Text style={styles.headerTagline}>AI-powered ingredient scanner</Text>
         </View>
 
         {/* Ready to Scan Card */}
@@ -180,16 +185,37 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxxl,
   },
   header: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
+    alignItems: 'center',
   },
-  headerTitle: {
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  logoMini: {
+    width: 32,
+    height: 32,
+    backgroundColor: Colors.gray800,
+    borderRadius: BorderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.sm,
+  },
+  logoMiniText: {
+    fontSize: 14,
+    fontWeight: '300',
+    color: Colors.white,
+    letterSpacing: -1,
+  },
+  brandName: {
     fontSize: 24,
     fontWeight: '700',
     color: Colors.black,
-    marginBottom: Spacing.xs,
+    letterSpacing: -0.5,
   },
-  headerSubtitle: {
-    ...Typography.body,
+  headerTagline: {
+    fontSize: 14,
     color: Colors.gray500,
   },
   readyCard: {
