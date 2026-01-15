@@ -1,2 +1,0 @@
-# PureMark Test Suite
-
