@@ -594,7 +594,8 @@ export const ANIMAL_DERIVATIVES_CONFIG = {
       terms: [
         "pork", "porcine", "swine", "pig", "boar", "lard", "ham", "bacon",
         "porcine gelatin", "gelatin (porcine)", "pork fat", "pork extract",
-        "pork flavoring", "pancetta", "prosciutto", "chorizo", "pepperoni"
+        "pork flavoring", "pancetta", "prosciutto", "chorizo", "pepperoni",
+        "salami pork", "pork rinds", "chicharron"
       ],
       reason: "Pork/swine derivative - explicitly forbidden",
       reason_code: "haram_pork_swine_detected"
@@ -602,20 +603,47 @@ export const ANIMAL_DERIVATIVES_CONFIG = {
     blood_products: {
       terms: [
         "blood", "blood plasma", "blood powder", "dried blood",
-        "hemoglobin", "blood sausage", "black pudding", "blood meal"
+        "hemoglobin", "blood sausage", "black pudding", "blood meal",
+        "boudin noir", "morcilla"
       ],
       reason: "Blood product - explicitly forbidden",
       reason_code: "haram_blood_detected"
     },
     carrion: {
-      terms: ["carrion"],
+      terms: ["carrion", "dead animal", "roadkill"],
       reason: "Carrion (dead animal not slaughtered) - explicitly forbidden",
       reason_code: "haram_carrion_detected"
     },
+    carnivore: {
+      terms: ["dog", "cat", "lion", "tiger", "bear", "carnivore meat", "wolf", "fox", "hyena"],
+      reason: "Carnivore meat - explicitly forbidden",
+      reason_code: "haram_carnivore_detected"
+    },
+    civet: {
+      terms: ["civet coffee", "kopi luwak", "civet cat", "luwak coffee"],
+      reason: "Civet-processed coffee - haram (animal digestive process)",
+      reason_code: "haram_civet_detected"
+    },
+    castoreum: {
+      terms: ["castoreum", "beaver extract", "beaver secretion"],
+      reason: "Castoreum (beaver gland secretion) - haram",
+      reason_code: "haram_castoreum_detected"
+    },
+    ambergris: {
+      terms: ["ambergris", "whale ambergris", "ambra grisea"],
+      reason: "Ambergris (whale product) - haram",
+      reason_code: "haram_ambergris_detected"
+    },
+    musk_animal: {
+      terms: ["musk deer", "animal musk", "deer musk", "musk gland", "kasturi"],
+      reason: "Animal musk (deer gland secretion) - haram unless halal slaughtered",
+      reason_code: "haram_animal_musk_detected"
+    },
     insect_derived: {
       terms: [
-        "carmine", "cochineal", "shellac", "confectioner's glaze",
-        "pharmaceutical glaze", "lac resin"
+        "carmine", "cochineal", "shellac", "confectioner's glaze", "confectioners glaze",
+        "confectionery glaze", "resinous glaze", "pharmaceutical glaze", "lac resin",
+        "natural red 4", "crimson lake", "e120", "e904"
       ],
       reason: "Insect-derived ingredient",
       reason_code: "haram_insect_derived"
@@ -855,20 +883,20 @@ export const ANIMAL_DERIVATIVES_CONFIG = {
       reason_code: "omega3_halal"
     },
     l_cysteine: {
-      generic_terms: ["l-cysteine", "lcysteine", "l cysteine", "cysteine"],
+      generic_terms: ["l-cysteine", "lcysteine", "l cysteine", "cysteine", "e920", "e921"],
       sources: {
         synthetic: {
-          terms: ["synthetic l-cysteine", "fermentation l-cysteine"],
+          terms: ["synthetic l-cysteine", "fermentation l-cysteine", "vegan l-cysteine"],
           status: "HALAL",
           reason: "Synthetic/fermentation L-cysteine - halal"
         },
         human_hair: {
-          terms: ["human hair l-cysteine"],
+          terms: ["human hair l-cysteine", "human hair cysteine"],
           status: "HARAM",
           reason: "Human hair-derived L-cysteine - haram"
         },
         duck_feather: {
-          terms: ["duck feather", "poultry feather"],
+          terms: ["duck feather", "poultry feather", "feather cysteine"],
           status: "MUSHBOOH",
           reason: "Poultry feather L-cysteine - requires halal slaughter verification"
         }
@@ -876,13 +904,127 @@ export const ANIMAL_DERIVATIVES_CONFIG = {
       default_status: "MUSHBOOH",
       default_reason: "L-cysteine with unspecified source - often from human hair or duck feathers",
       reason_code: "lcysteine_source_unknown_mushbooh"
+    },
+    stearates: {
+      generic_terms: ["stearate", "stearic acid", "magnesium stearate", "calcium stearate", "sodium stearate", "stearyl alcohol", "e470", "e570", "e572"],
+      sources: {
+        plant: {
+          terms: ["vegetable stearate", "plant stearate", "vegetable stearic acid", "palm stearate"],
+          status: "HALAL",
+          reason: "Plant-based stearate"
+        },
+        animal: {
+          terms: ["animal stearate", "tallow stearate", "beef stearate"],
+          status: "MUSHBOOH",
+          reason: "Animal-derived stearate"
+        }
+      },
+      default_status: "MUSHBOOH",
+      default_reason: "Stearate source not specified - may be animal or plant",
+      reason_code: "stearate_source_unknown_mushbooh"
+    },
+    taurine: {
+      generic_terms: ["taurine"],
+      sources: {
+        synthetic: {
+          terms: ["synthetic taurine", "vegan taurine", "plant taurine"],
+          status: "HALAL",
+          reason: "Synthetic taurine - halal"
+        },
+        animal: {
+          terms: ["ox bile taurine", "animal taurine", "bile taurine"],
+          status: "MUSHBOOH",
+          reason: "Animal-derived taurine"
+        }
+      },
+      default_status: "MUSHBOOH",
+      default_reason: "Taurine source not specified - may be synthetic or animal",
+      reason_code: "taurine_source_unknown_mushbooh"
+    },
+    charcoal: {
+      generic_terms: ["activated charcoal", "activated carbon", "charcoal", "carbon black"],
+      sources: {
+        plant: {
+          terms: ["coconut charcoal", "wood charcoal", "bamboo charcoal", "vegetable charcoal"],
+          status: "HALAL",
+          reason: "Plant-based charcoal"
+        },
+        bone: {
+          terms: ["bone char", "bone charcoal", "animal charcoal"],
+          status: "MUSHBOOH",
+          reason: "Bone-derived charcoal"
+        }
+      },
+      default_status: "MUSHBOOH",
+      default_reason: "Charcoal source not specified - may be bone or plant",
+      reason_code: "charcoal_source_unknown_mushbooh"
+    },
+    wax: {
+      generic_terms: ["wax", "food grade wax", "glazing agent"],
+      sources: {
+        plant: {
+          terms: ["carnauba wax", "candelilla wax", "rice bran wax", "plant wax", "vegetable wax"],
+          status: "HALAL",
+          reason: "Plant-based wax"
+        },
+        insect: {
+          terms: ["beeswax", "bee wax", "e901"],
+          status: "MUSHBOOH",
+          reason: "Beeswax - permissibility debated"
+        },
+        petroleum: {
+          terms: ["paraffin wax", "microcrystalline wax", "petroleum wax"],
+          status: "HALAL",
+          reason: "Petroleum-based wax"
+        }
+      },
+      default_status: "MUSHBOOH",
+      default_reason: "Wax source not specified",
+      reason_code: "wax_source_unknown_mushbooh"
+    },
+    natural_flavors: {
+      generic_terms: ["natural flavor", "natural flavour", "natural flavoring", "natural flavouring", "natural butter flavor", "butter flavor"],
+      sources: {
+        plant: {
+          terms: ["plant-based flavor", "vegetable flavor", "fruit flavor", "spice extract"],
+          status: "HALAL",
+          reason: "Plant-based natural flavor"
+        },
+        halal: {
+          terms: ["halal flavor", "halal natural flavor"],
+          status: "HALAL",
+          reason: "Halal-certified natural flavor"
+        }
+      },
+      default_status: "MUSHBOOH",
+      default_reason: "Natural flavors have undisclosed sources",
+      reason_code: "natural_flavor_source_unknown_mushbooh"
+    },
+    cetyl_stearyl_alcohol: {
+      generic_terms: ["cetyl alcohol", "stearyl alcohol", "cetearyl alcohol"],
+      sources: {
+        plant: {
+          terms: ["vegetable cetyl", "coconut cetyl", "palm cetyl", "plant-derived cetyl"],
+          status: "HALAL",
+          reason: "Plant-derived fatty alcohol"
+        },
+        animal: {
+          terms: ["animal cetyl", "tallow cetyl"],
+          status: "MUSHBOOH",
+          reason: "Animal-derived fatty alcohol"
+        }
+      },
+      default_status: "MUSHBOOH",
+      default_reason: "Cetyl/stearyl alcohol source not specified",
+      reason_code: "cetyl_stearyl_source_unknown_mushbooh"
     }
   },
   processed_dairy: {
     terms: [
       "cheese", "whey", "whey powder", "whey protein", "casein",
-      "caseinate", "sodium caseinate", "calcium caseinate",
-      "milk powder", "skim milk powder", "cream powder", "buttermilk powder"
+      "caseinate", "sodium caseinate", "calcium caseinate", "casein hydrolysate",
+      "milk powder", "skim milk powder", "cream powder", "buttermilk powder",
+      "lactose", "milk protein", "whey permeate", "sweet whey"
     ],
     halal_qualifiers: ["microbial rennet", "vegetable rennet", "halal cheese", "halal certified"],
     reason: "Processed dairy may contain animal rennet or non-halal cultures",
@@ -892,17 +1034,28 @@ export const ANIMAL_DERIVATIVES_CONFIG = {
   starter_cultures: {
     terms: [
       "cultures", "culture", "starter culture", "starter cultures",
-      "lactic cultures", "yogurt cultures", "cheese cultures"
+      "lactic cultures", "yogurt cultures", "cheese cultures", "probiotic culture"
     ],
     reason: "Starter cultures may be grown on non-halal media",
     reason_code: "cultures_source_unknown_mushbooh",
+    default_status: "MUSHBOOH"
+  },
+  gelatin_products: {
+    terms: [
+      "marshmallow", "marshmallows", "gummy", "gummies", "gummy bear", "gummy bears",
+      "gummy candy", "jello", "jelly", "jell-o", "gelatin capsule", "gel capsule",
+      "softgel", "wine gums"
+    ],
+    halal_qualifiers: ["halal marshmallow", "vegan marshmallow", "halal gummy", "vegan gummy", "halal jelly", "vegetarian capsule", "vegan capsule", "plant capsule"],
+    reason: "Usually contains gelatin - check ingredients",
+    reason_code: "gelatin_product_check_mushbooh",
     default_status: "MUSHBOOH"
   },
   other_animal_derived: {
     bone_products: {
       terms: [
         "bone char", "bone charcoal", "bone phosphate", "bone meal",
-        "bone broth", "beef broth", "chicken broth"
+        "bone broth", "beef broth", "chicken broth", "dicalcium phosphate"
       ],
       reason: "Bone-derived product - requires halal source verification",
       reason_code: "bone_product_source_unknown",
@@ -921,7 +1074,7 @@ export const ANIMAL_DERIVATIVES_CONFIG = {
       default_status: "MUSHBOOH"
     },
     elastin: {
-      terms: ["elastin"],
+      terms: ["elastin", "hydrolyzed elastin"],
       reason: "Elastin from animal connective tissue - source dependent",
       reason_code: "elastin_source_unknown_mushbooh",
       default_status: "MUSHBOOH"
@@ -938,16 +1091,22 @@ export const ANIMAL_DERIVATIVES_CONFIG = {
       reason_code: "lanolin_halal",
       default_status: "HALAL"
     },
-    beeswax: {
-      terms: ["beeswax", "cera alba"],
-      reason: "Beeswax - halal",
-      reason_code: "beeswax_halal",
-      default_status: "HALAL"
-    },
     honey: {
-      terms: ["honey", "royal jelly", "propolis"],
+      terms: ["honey", "royal jelly", "propolis", "bee pollen"],
       reason: "Honey/bee products - halal",
       reason_code: "honey_halal",
+      default_status: "HALAL"
+    },
+    eggs: {
+      terms: ["egg", "eggs", "egg white", "egg yolk", "albumen", "egg powder", "dried egg", "egg lecithin"],
+      reason: "Eggs are halal",
+      reason_code: "eggs_halal",
+      default_status: "HALAL"
+    },
+    omega3: {
+      terms: ["omega-3", "omega 3", "fish oil", "dha", "epa", "salmon oil", "cod liver oil", "krill oil", "algae oil", "algal oil"],
+      reason: "Omega-3 typically from fish or algae - halal",
+      reason_code: "omega3_halal",
       default_status: "HALAL"
     }
   }

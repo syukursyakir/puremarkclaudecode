@@ -180,19 +180,49 @@ ALCOHOL_CONFIG = {
 ANIMAL_DERIVATIVES_CONFIG = {
     "always_haram": {
         "pork": {
-            "terms": ["pork", "pig", "swine", "bacon", "ham", "lard", "porcine", "pancetta", "prosciutto", "chorizo pork"],
+            "terms": ["pork", "pig", "swine", "bacon", "ham", "lard", "porcine", "pancetta", "prosciutto", "chorizo pork", "pepperoni", "salami pork", "pork rinds", "chicharron"],
             "reason": "Pork-derived ingredient - always haram",
             "reason_code": "pork_haram"
         },
         "blood": {
-            "terms": ["blood", "blood meal", "blood plasma", "black pudding"],
+            "terms": ["blood", "blood meal", "blood plasma", "black pudding", "blood sausage", "boudin noir", "morcilla", "hemoglobin", "dried blood"],
             "reason": "Blood-derived ingredient - always haram",
             "reason_code": "blood_haram"
         },
         "carnivore": {
-            "terms": ["dog", "cat", "lion", "tiger", "bear", "carnivore meat"],
+            "terms": ["dog", "cat", "lion", "tiger", "bear", "carnivore meat", "wolf", "fox", "hyena"],
             "reason": "Carnivore meat - always haram",
             "reason_code": "carnivore_haram"
+        },
+        "carrion": {
+            "terms": ["carrion", "dead animal", "roadkill"],
+            "reason": "Carrion (not properly slaughtered) - always haram",
+            "reason_code": "carrion_haram"
+        },
+        "civet": {
+            "terms": ["civet coffee", "kopi luwak", "civet cat", "luwak coffee"],
+            "reason": "Civet-processed coffee - haram (animal digestive process)",
+            "reason_code": "civet_haram"
+        },
+        "castoreum": {
+            "terms": ["castoreum", "beaver extract", "beaver secretion"],
+            "reason": "Castoreum (beaver gland secretion) - haram",
+            "reason_code": "castoreum_haram"
+        },
+        "ambergris": {
+            "terms": ["ambergris", "whale ambergris", "ambra grisea"],
+            "reason": "Ambergris (whale product) - haram",
+            "reason_code": "ambergris_haram"
+        },
+        "musk_animal": {
+            "terms": ["musk deer", "animal musk", "deer musk", "musk gland", "kasturi"],
+            "reason": "Animal musk (deer gland secretion) - haram unless halal slaughtered",
+            "reason_code": "animal_musk_haram"
+        },
+        "insects": {
+            "terms": ["carmine", "cochineal", "shellac", "confectioners glaze", "confectionery glaze", "resinous glaze", "pharmaceutical glaze", "lac resin", "natural red 4", "crimson lake", "e120", "e904"],
+            "reason": "Insect-derived ingredient - haram",
+            "reason_code": "insect_derived_haram"
         }
     },
     "source_dependent": {
@@ -201,49 +231,235 @@ ANIMAL_DERIVATIVES_CONFIG = {
             "sources": {
                 "porcine": {"terms": ["porcine gelatin", "porcine gelatine", "pig gelatin", "pig gelatine", "pork gelatin", "pork gelatine"], "status": "HARAM", "reason": "Porcine gelatin"},
                 "bovine": {"terms": ["bovine gelatin", "bovine gelatine", "beef gelatin", "beef gelatine", "cow gelatin", "cow gelatine"], "status": "MUSHBOOH", "reason": "Bovine gelatin - requires halal slaughter verification"},
-                "fish": {"terms": ["fish gelatin", "fish gelatine", "marine gelatin", "marine gelatine"], "status": "HALAL", "reason": "Fish gelatin - halal"},
-                "halal": {"terms": ["halal gelatin", "halal gelatine", "gelatin (halal)", "gelatine (halal)"], "status": "HALAL", "reason": "Explicitly halal certified gelatin"}
+                "fish": {"terms": ["fish gelatin", "fish gelatine", "marine gelatin", "marine gelatine", "kosher gelatin", "kosher gelatine"], "status": "HALAL", "reason": "Fish gelatin - halal"},
+                "halal": {"terms": ["halal gelatin", "halal gelatine", "gelatin (halal)", "gelatine (halal)", "halal certified gelatin"], "status": "HALAL", "reason": "Explicitly halal certified gelatin"},
+                "plant": {"terms": ["plant gelatin", "vegan gelatin", "vegetable gelatin", "agar", "agar-agar", "carrageenan", "pectin"], "status": "HALAL", "reason": "Plant-based gelatin alternative"}
             },
             "default_status": "MUSHBOOH",
             "default_reason": "Gelatin source not specified - requires verification",
             "reason_code": "gelatin_source_unknown"
         },
         "enzymes": {
-            "generic_terms": ["enzyme", "rennet", "lipase", "protease"],
+            "generic_terms": ["enzyme", "rennet", "lipase", "protease", "pepsin", "amylase", "lactase"],
             "sources": {
-                "microbial": {"terms": ["microbial enzyme", "microbial rennet", "vegetable rennet"], "status": "HALAL", "reason": "Microbial/vegetable enzyme"},
-                "animal": {"terms": ["animal enzyme", "animal rennet", "calf rennet"], "status": "MUSHBOOH", "reason": "Animal enzyme - source verification needed"}
+                "microbial": {"terms": ["microbial enzyme", "microbial rennet", "vegetable rennet", "fungal enzyme", "bacterial enzyme", "microbial lipase", "microbial pepsin"], "status": "HALAL", "reason": "Microbial/vegetable enzyme"},
+                "animal": {"terms": ["animal enzyme", "animal rennet", "calf rennet", "animal lipase", "porcine pepsin", "pig pepsin"], "status": "MUSHBOOH", "reason": "Animal enzyme - source verification needed"}
             },
             "default_status": "MUSHBOOH",
             "default_reason": "Enzyme source not specified",
             "reason_code": "enzyme_source_unknown"
+        },
+        "glycerin": {
+            "generic_terms": ["glycerin", "glycerine", "glycerol", "e422"],
+            "sources": {
+                "plant": {"terms": ["vegetable glycerin", "vegetable glycerine", "plant glycerin", "plant-based glycerin", "palm glycerin", "coconut glycerin"], "status": "HALAL", "reason": "Plant-based glycerin"},
+                "animal": {"terms": ["animal glycerin", "tallow glycerin", "beef glycerin"], "status": "MUSHBOOH", "reason": "Animal-derived glycerin - requires verification"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Glycerin source not specified - may be animal or plant",
+            "reason_code": "glycerin_source_unknown"
+        },
+        "stearates": {
+            "generic_terms": ["stearate", "stearic acid", "magnesium stearate", "calcium stearate", "sodium stearate", "stearyl alcohol", "e470", "e570", "e572"],
+            "sources": {
+                "plant": {"terms": ["vegetable stearate", "plant stearate", "vegetable stearic acid", "palm stearate"], "status": "HALAL", "reason": "Plant-based stearate"},
+                "animal": {"terms": ["animal stearate", "tallow stearate", "beef stearate"], "status": "MUSHBOOH", "reason": "Animal-derived stearate"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Stearate source not specified - may be animal or plant",
+            "reason_code": "stearate_source_unknown"
+        },
+        "fatty_acids": {
+            "generic_terms": ["fatty acid", "mono and diglycerides", "monoglycerides", "diglycerides", "e471", "e472", "e473", "e474", "e475", "e476", "e477"],
+            "sources": {
+                "plant": {"terms": ["vegetable fatty acid", "plant fatty acid", "vegetable mono", "vegetable emulsifier", "soy-based emulsifier", "palm-based"], "status": "HALAL", "reason": "Plant-based fatty acids"},
+                "animal": {"terms": ["animal fatty acid", "tallow-based", "beef fat"], "status": "MUSHBOOH", "reason": "Animal-derived fatty acids"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Fatty acid source not specified",
+            "reason_code": "fatty_acid_source_unknown"
+        },
+        "shortening": {
+            "generic_terms": ["shortening", "tallow"],
+            "sources": {
+                "vegetable": {"terms": ["vegetable shortening", "palm shortening", "coconut shortening", "vegetable oil shortening"], "status": "HALAL", "reason": "Vegetable shortening"},
+                "animal": {"terms": ["animal shortening", "beef tallow", "lard"], "status": "HARAM", "reason": "Animal shortening (often contains lard)"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Shortening source not specified",
+            "reason_code": "shortening_source_unknown"
+        },
+        "collagen": {
+            "generic_terms": ["collagen", "hydrolyzed collagen", "collagen peptides"],
+            "sources": {
+                "marine": {"terms": ["marine collagen", "fish collagen", "sea collagen"], "status": "HALAL", "reason": "Marine collagen - halal"},
+                "bovine": {"terms": ["bovine collagen", "beef collagen", "cow collagen"], "status": "MUSHBOOH", "reason": "Bovine collagen - requires verification"},
+                "porcine": {"terms": ["porcine collagen", "pig collagen"], "status": "HARAM", "reason": "Porcine collagen"},
+                "plant": {"terms": ["plant collagen", "vegan collagen", "collagen booster"], "status": "HALAL", "reason": "Plant-based collagen alternative"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Collagen source not specified",
+            "reason_code": "collagen_source_unknown"
+        },
+        "taurine": {
+            "generic_terms": ["taurine"],
+            "sources": {
+                "synthetic": {"terms": ["synthetic taurine", "vegan taurine", "plant taurine"], "status": "HALAL", "reason": "Synthetic taurine - halal"},
+                "animal": {"terms": ["ox bile taurine", "animal taurine", "bile taurine"], "status": "MUSHBOOH", "reason": "Animal-derived taurine"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Taurine source not specified - may be synthetic or animal",
+            "reason_code": "taurine_source_unknown"
+        },
+        "vitamin_a": {
+            "generic_terms": ["vitamin a", "retinol", "retinyl palmitate", "retinyl acetate"],
+            "sources": {
+                "synthetic": {"terms": ["synthetic vitamin a", "synthetic retinol"], "status": "HALAL", "reason": "Synthetic vitamin A"},
+                "plant": {"terms": ["beta carotene", "plant vitamin a", "carrot extract"], "status": "HALAL", "reason": "Plant-derived vitamin A precursor"},
+                "fish": {"terms": ["fish liver oil", "cod liver oil", "fish vitamin a"], "status": "HALAL", "reason": "Fish-derived vitamin A"}
+            },
+            "default_status": "HALAL",
+            "default_reason": "Vitamin A - typically synthetic or plant-derived",
+            "reason_code": "vitamin_a_halal"
+        },
+        "vitamin_d3": {
+            "generic_terms": ["vitamin d3", "cholecalciferol", "d3"],
+            "sources": {
+                "lichen": {"terms": ["lichen vitamin d3", "lichen-derived", "vegan vitamin d3", "plant vitamin d3"], "status": "HALAL", "reason": "Lichen-derived vitamin D3"},
+                "lanolin": {"terms": ["lanolin vitamin d3", "sheep wool", "wool-derived"], "status": "HALAL", "reason": "Lanolin-derived vitamin D3 (wool is halal)"},
+                "fish": {"terms": ["fish oil vitamin d3", "fish liver oil", "cod liver"], "status": "HALAL", "reason": "Fish-derived vitamin D3"}
+            },
+            "default_status": "HALAL",
+            "default_reason": "Vitamin D3 - typically from lanolin (sheep wool) or fish",
+            "reason_code": "vitamin_d3_halal"
+        },
+        "l_cysteine": {
+            "generic_terms": ["l-cysteine", "l cysteine", "cysteine", "e920", "e921"],
+            "sources": {
+                "synthetic": {"terms": ["synthetic l-cysteine", "fermentation l-cysteine", "vegan l-cysteine"], "status": "HALAL", "reason": "Synthetic L-cysteine"},
+                "human_hair": {"terms": ["human hair l-cysteine", "human hair cysteine"], "status": "HARAM", "reason": "Human hair-derived L-cysteine"},
+                "duck_feather": {"terms": ["duck feather", "poultry feather", "feather cysteine"], "status": "MUSHBOOH", "reason": "Poultry feather L-cysteine - requires verification"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "L-cysteine source not specified - often from human hair or feathers",
+            "reason_code": "l_cysteine_source_unknown"
+        },
+        "charcoal": {
+            "generic_terms": ["activated charcoal", "activated carbon", "charcoal", "carbon black"],
+            "sources": {
+                "plant": {"terms": ["coconut charcoal", "wood charcoal", "bamboo charcoal", "vegetable charcoal"], "status": "HALAL", "reason": "Plant-based charcoal"},
+                "bone": {"terms": ["bone char", "bone charcoal", "animal charcoal"], "status": "MUSHBOOH", "reason": "Bone-derived charcoal"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Charcoal source not specified - may be bone or plant",
+            "reason_code": "charcoal_source_unknown"
+        },
+        "wax": {
+            "generic_terms": ["wax", "food grade wax", "glazing agent"],
+            "sources": {
+                "plant": {"terms": ["carnauba wax", "candelilla wax", "rice bran wax", "plant wax", "vegetable wax"], "status": "HALAL", "reason": "Plant-based wax"},
+                "insect": {"terms": ["beeswax", "bee wax", "e901"], "status": "MUSHBOOH", "reason": "Beeswax - permissibility debated"},
+                "petroleum": {"terms": ["paraffin wax", "microcrystalline wax", "petroleum wax"], "status": "HALAL", "reason": "Petroleum-based wax"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Wax source not specified",
+            "reason_code": "wax_source_unknown"
+        },
+        "natural_flavors": {
+            "generic_terms": ["natural flavor", "natural flavour", "natural flavoring", "natural flavouring", "natural butter flavor", "butter flavor"],
+            "sources": {
+                "plant": {"terms": ["plant-based flavor", "vegetable flavor", "fruit flavor", "spice extract"], "status": "HALAL", "reason": "Plant-based natural flavor"},
+                "halal": {"terms": ["halal flavor", "halal natural flavor"], "status": "HALAL", "reason": "Halal-certified natural flavor"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Natural flavors have undisclosed sources",
+            "reason_code": "natural_flavor_source_unknown"
+        },
+        "cetyl_stearyl_alcohol": {
+            "generic_terms": ["cetyl alcohol", "stearyl alcohol", "cetearyl alcohol"],
+            "sources": {
+                "plant": {"terms": ["vegetable cetyl", "coconut cetyl", "palm cetyl", "plant-derived cetyl"], "status": "HALAL", "reason": "Plant-derived fatty alcohol"},
+                "animal": {"terms": ["animal cetyl", "tallow cetyl"], "status": "MUSHBOOH", "reason": "Animal-derived fatty alcohol"}
+            },
+            "default_status": "MUSHBOOH",
+            "default_reason": "Cetyl/stearyl alcohol source not specified",
+            "reason_code": "cetyl_stearyl_source_unknown"
         }
     },
     "processed_dairy": {
-        "terms": ["cheese", "whey", "casein", "lactose"],
-        "halal_qualifiers": ["vegetarian cheese", "microbial rennet", "halal cheese"],
+        "terms": ["cheese", "whey", "whey powder", "whey protein", "casein", "caseinate", "sodium caseinate", "calcium caseinate", "casein hydrolysate", "lactose", "milk protein", "whey permeate", "sweet whey"],
+        "halal_qualifiers": ["vegetarian cheese", "microbial rennet", "halal cheese", "halal certified", "vegetable rennet"],
         "default_status": "MUSHBOOH",
         "reason": "Dairy may contain animal rennet",
         "reason_code": "dairy_rennet_unknown"
     },
     "starter_cultures": {
-        "terms": ["starter culture", "lactic culture", "culture"],
-        "default_status": "HALAL",
-        "reason": "Bacterial cultures are halal",
-        "reason_code": "starter_culture_halal"
+        "terms": ["starter culture", "lactic culture", "culture", "yogurt culture", "cheese culture", "probiotic culture"],
+        "default_status": "MUSHBOOH",
+        "reason": "Starter cultures may be grown on non-halal media",
+        "reason_code": "starter_culture_unknown"
+    },
+    "gelatin_products": {
+        "terms": ["marshmallow", "marshmallows", "gummy", "gummies", "gummy bear", "gummy bears", "gummy candy", "jello", "jelly", "jell-o", "gelatin capsule", "gel capsule", "softgel", "wine gums"],
+        "halal_qualifiers": ["halal marshmallow", "vegan marshmallow", "halal gummy", "vegan gummy", "halal jelly", "vegetarian capsule", "vegan capsule", "plant capsule"],
+        "default_status": "MUSHBOOH",
+        "reason": "Usually contains gelatin - check ingredients",
+        "reason_code": "gelatin_product_check"
     },
     "other_animal_derived": {
         "honey": {
-            "terms": ["honey", "royal jelly", "bee pollen"],
+            "terms": ["honey", "royal jelly", "bee pollen", "propolis"],
             "default_status": "HALAL",
             "reason": "Bee products are halal",
             "reason_code": "bee_products_halal"
         },
         "eggs": {
-            "terms": ["egg", "eggs", "egg white", "egg yolk", "albumen"],
+            "terms": ["egg", "eggs", "egg white", "egg yolk", "albumen", "egg powder", "dried egg", "egg lecithin"],
             "default_status": "HALAL",
             "reason": "Eggs are halal",
             "reason_code": "eggs_halal"
+        },
+        "bone_products": {
+            "terms": ["bone broth", "beef broth", "chicken broth", "bone phosphate", "bone meal", "dicalcium phosphate"],
+            "default_status": "MUSHBOOH",
+            "reason": "Bone products require halal source verification",
+            "reason_code": "bone_product_source_unknown"
+        },
+        "isinglass": {
+            "terms": ["isinglass"],
+            "default_status": "HALAL",
+            "reason": "Fish bladder - halal (fining agent)",
+            "reason_code": "isinglass_halal"
+        },
+        "keratin": {
+            "terms": ["keratin", "hydrolyzed keratin"],
+            "default_status": "MUSHBOOH",
+            "reason": "Keratin from hair/feathers/hooves - source dependent",
+            "reason_code": "keratin_source_unknown"
+        },
+        "elastin": {
+            "terms": ["elastin", "hydrolyzed elastin"],
+            "default_status": "MUSHBOOH",
+            "reason": "Elastin from animal connective tissue",
+            "reason_code": "elastin_source_unknown"
+        },
+        "lanolin": {
+            "terms": ["lanolin", "wool grease", "wool wax"],
+            "default_status": "HALAL",
+            "reason": "Lanolin from sheep wool - halal (no slaughter)",
+            "reason_code": "lanolin_halal"
+        },
+        "omega3": {
+            "terms": ["omega-3", "omega 3", "fish oil", "dha", "epa", "salmon oil", "cod liver oil", "krill oil", "algae oil", "algal oil"],
+            "default_status": "HALAL",
+            "reason": "Omega-3 typically from fish or algae - halal",
+            "reason_code": "omega3_halal"
+        },
+        "chitosan": {
+            "terms": ["chitosan", "chitin"],
+            "default_status": "HALAL",
+            "reason": "Chitosan from shellfish/fungi - halal",
+            "reason_code": "chitosan_halal"
         }
     }
 }
