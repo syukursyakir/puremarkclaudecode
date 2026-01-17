@@ -626,27 +626,27 @@ export const ANIMAL_DERIVATIVES_CONFIG = {
       generic_terms: ["gelatin", "gelatine", "gel"],
       sources: {
         porcine: {
-          terms: ["porcine gelatin", "pork gelatin", "pig gelatin"],
+          terms: ["porcine gelatin", "porcine gelatine", "pork gelatin", "pork gelatine", "pig gelatin", "pig gelatine"],
           status: "HARAM",
           reason: "Porcine (pig) gelatin"
         },
         bovine: {
-          terms: ["bovine gelatin", "beef gelatin", "cow gelatin"],
+          terms: ["bovine gelatin", "bovine gelatine", "beef gelatin", "beef gelatine", "cow gelatin", "cow gelatine"],
           status: "MUSHBOOH",
           reason: "Bovine gelatin - requires halal slaughter verification"
         },
         fish: {
-          terms: ["fish gelatin", "marine gelatin", "kosher gelatin"],
+          terms: ["fish gelatin", "fish gelatine", "marine gelatin", "marine gelatine", "kosher gelatin", "kosher gelatine"],
           status: "HALAL",
           reason: "Fish/marine gelatin - halal"
         },
         halal_certified: {
-          terms: ["halal gelatin", "gelatin (halal)", "halal-certified gelatin"],
+          terms: ["halal gelatin", "halal gelatine", "gelatin (halal)", "gelatine (halal)", "halal-certified gelatin", "halal-certified gelatine"],
           status: "HALAL",
           reason: "Halal-certified gelatin"
         },
         plant_based: {
-          terms: ["plant gelatin", "vegan gelatin", "vegetable gelatin", "agar", "agar-agar", "carrageenan", "pectin"],
+          terms: ["plant gelatin", "plant gelatine", "vegan gelatin", "vegan gelatine", "vegetable gelatin", "vegetable gelatine", "agar", "agar-agar", "carrageenan", "pectin"],
           status: "HALAL",
           reason: "Plant-based gelatin alternative"
         }

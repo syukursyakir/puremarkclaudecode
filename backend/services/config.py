@@ -199,10 +199,10 @@ ANIMAL_DERIVATIVES_CONFIG = {
         "gelatin": {
             "generic_terms": ["gelatin", "gelatine", "gel"],
             "sources": {
-                "porcine": {"terms": ["porcine gelatin", "pig gelatin", "pork gelatin"], "status": "HARAM", "reason": "Porcine gelatin"},
-                "bovine": {"terms": ["bovine gelatin", "beef gelatin", "cow gelatin"], "status": "MUSHBOOH", "reason": "Bovine gelatin - requires halal slaughter verification"},
-                "fish": {"terms": ["fish gelatin", "marine gelatin"], "status": "HALAL", "reason": "Fish gelatin - halal"},
-                "halal": {"terms": ["halal gelatin", "gelatin (halal)"], "status": "HALAL", "reason": "Explicitly halal certified gelatin"}
+                "porcine": {"terms": ["porcine gelatin", "porcine gelatine", "pig gelatin", "pig gelatine", "pork gelatin", "pork gelatine"], "status": "HARAM", "reason": "Porcine gelatin"},
+                "bovine": {"terms": ["bovine gelatin", "bovine gelatine", "beef gelatin", "beef gelatine", "cow gelatin", "cow gelatine"], "status": "MUSHBOOH", "reason": "Bovine gelatin - requires halal slaughter verification"},
+                "fish": {"terms": ["fish gelatin", "fish gelatine", "marine gelatin", "marine gelatine"], "status": "HALAL", "reason": "Fish gelatin - halal"},
+                "halal": {"terms": ["halal gelatin", "halal gelatine", "gelatin (halal)", "gelatine (halal)"], "status": "HALAL", "reason": "Explicitly halal certified gelatin"}
             },
             "default_status": "MUSHBOOH",
             "default_reason": "Gelatin source not specified - requires verification",

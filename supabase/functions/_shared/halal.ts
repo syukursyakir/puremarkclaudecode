@@ -411,9 +411,10 @@ export function evaluateHalalStrict(
     }
   }
 
-  // 5) Gelatin handling
-  if (wordInText(ing, "gelatin") || containsEnumber(ing, "441")) {
-    if (anyWordInText(ing, ["porcine", "pig", "swine"])) {
+  // 5) Gelatin handling (supports both "gelatin" and "gelatine" spellings)
+  if (wordInText(ing, "gelatin") || wordInText(ing, "gelatine") || containsEnumber(ing, "441")) {
+    // Check for porcine/pork source first - always HARAM
+    if (anyWordInText(ing, ["porcine", "pig", "swine", "pork"])) {
       return {
         ingredient: ingRaw,
         status: HARAM,
@@ -423,7 +424,9 @@ export function evaluateHalalStrict(
       };
     }
 
-    if (anyWordInText(ing, ["halal gelatin", "gelatin (halal)"])) {
+    // Check for explicit "(halal)" marker anywhere in the ingredient - this takes priority
+    // This handles cases like "Beef Gelatine (Halal)", "Gelatin (Halal)", etc.
+    if (ing.includes("(halal)") || anyWordInText(ing, ["halal gelatin", "halal gelatine", "gelatin (halal)", "gelatine (halal)"])) {
       reasons.push("halal_gelatin_explicit");
       evidence.push("Gelatin explicitly labeled halal");
       return {
@@ -435,7 +438,8 @@ export function evaluateHalalStrict(
       };
     }
 
-    if (wordInText(ing, "fish gelatin")) {
+    // Fish gelatin is halal
+    if (anyWordInText(ing, ["fish gelatin", "fish gelatine", "marine gelatin", "marine gelatine"])) {
       reasons.push("fish_gelatin");
       evidence.push("Fish-derived gelatin");
       return {
@@ -447,7 +451,8 @@ export function evaluateHalalStrict(
       };
     }
 
-    if (anyWordInText(ing, ["bovine gelatin", "beef gelatin"])) {
+    // Bovine/beef gelatin without halal marker - requires verification
+    if (anyWordInText(ing, ["bovine gelatin", "bovine gelatine", "beef gelatin", "beef gelatine"])) {
       reasons.push("bovine_gelatin_unverified");
       evidence.push("Bovine gelatin without explicit halal certification");
       status = MUSHBOOH;

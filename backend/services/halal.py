@@ -309,9 +309,10 @@ def evaluate_halal_strict(
                 "evidence": [alcohol_result["reason"]]
             }
 
-    # 5) Gelatin handling
-    if word_in_text(ing, "gelatin") or "441" in extract_enumbers(ing):
-        if any_word_in_text(ing, ["porcine", "pig", "swine"]):
+    # 5) Gelatin handling (supports both "gelatin" and "gelatine" spellings)
+    if word_in_text(ing, "gelatin") or word_in_text(ing, "gelatine") or "441" in extract_enumbers(ing):
+        # Check for porcine/pork source first - always HARAM
+        if any_word_in_text(ing, ["porcine", "pig", "swine", "pork"]):
             return {
                 "ingredient": ing_raw,
                 "status": HARAM,
@@ -320,7 +321,9 @@ def evaluate_halal_strict(
                 "evidence": ["Porcine gelatin detected"]
             }
 
-        if any_word_in_text(ing, ["halal gelatin", "gelatin (halal)"]):
+        # Check for explicit "(halal)" marker anywhere in the ingredient - this takes priority
+        # This handles cases like "Beef Gelatine (Halal)", "Gelatin (Halal)", etc.
+        if "(halal)" in ing or any_word_in_text(ing, ["halal gelatin", "halal gelatine", "gelatin (halal)", "gelatine (halal)"]):
             return {
                 "ingredient": ing_raw,
                 "status": HALAL_CONFIRMED,
@@ -329,7 +332,8 @@ def evaluate_halal_strict(
                 "evidence": ["Gelatin explicitly labeled halal"]
             }
 
-        if word_in_text(ing, "fish gelatin"):
+        # Fish gelatin is halal
+        if any_word_in_text(ing, ["fish gelatin", "fish gelatine", "marine gelatin", "marine gelatine"]):
             return {
                 "ingredient": ing_raw,
                 "status": HALAL_CONFIRMED,
@@ -338,7 +342,8 @@ def evaluate_halal_strict(
                 "evidence": ["Fish-derived gelatin"]
             }
 
-        if any_word_in_text(ing, ["bovine gelatin", "beef gelatin"]):
+        # Bovine/beef gelatin without halal marker - requires verification
+        if any_word_in_text(ing, ["bovine gelatin", "bovine gelatine", "beef gelatin", "beef gelatine"]):
             reasons.append("bovine_gelatin_unverified")
             evidence.append("Bovine gelatin without explicit halal certification")
             status = MUSHBOOH
