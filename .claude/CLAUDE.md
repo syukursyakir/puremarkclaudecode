@@ -1,11 +1,11 @@
 # Claude Code Instructions
 
 ## Infrastructure
-- **Backend hosting**: Railway (deploys on git push to main)
-- **Edge Functions & Database**: Supabase
-- **Deployment**:
-  - Backend: `git push` triggers Railway auto-deploy
-  - Edge functions: `supabase functions deploy` to update Supabase functions
+- **Backend**: Railway (Python/FastAPI) - `https://puremarkclaudecode-production.up.railway.app`
+- **Database**: Supabase (database only, edge functions not used)
+- **Mobile App**: React Native / Expo
+- **Deployment**: `git push` triggers Railway auto-deploy
+- **Note**: Supabase edge functions exist in `/supabase/functions/` but are NOT active - the app uses Railway backend via `BACKEND_TYPE: 'railway'` in config.ts
 
 ## Permissions
 You are allowed to:
