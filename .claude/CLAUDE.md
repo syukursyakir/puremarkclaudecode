@@ -1,5 +1,13 @@
 # Claude Code Instructions
 
+## Infrastructure
+- **Backend hosting**: Railway (deploys on git push to main)
+- **Edge Functions & Database**: Supabase
+- **Deployment**:
+  - Backend: `git push` triggers Railway auto-deploy
+  - Edge functions: `supabase functions deploy` to update Supabase functions
+
+## Permissions
 You are allowed to:
 - Create, modify, and delete files freely
 - Run shell commands without asking
